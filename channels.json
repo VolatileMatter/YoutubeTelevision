@@ -24,7 +24,43 @@
           "label":"JWittz's Pokemon Videos",
           "youtubePlaylistId":"PL41Inn0WJmpnd-RGdglxp89bcpUkAmTdL",
           "note":"None."
-        }
+        },
+  {
+    "id": "filler_ryodile_facts",
+    "label": "Pokemon 5 Fun Facts",
+    "youtubePlaylistId": "PLyJqxTDlsZRMS8_5S84FX3CKLnIU9YMT5",
+    "note": "Short trivia videos regarding specific species."
+  },
+  {
+    "id": "filler_adef_daily_facts",
+    "label": "Daily Pokémon Facts",
+    "youtubePlaylistId": "PLqLRKhEtq90oundKQD0VOD0YJDuwVFiOi",
+    "note": "Ongoing shorts series covering facts for every Pokémon in Pokédex order."
+  },
+  {
+    "id": "filler_dobbs_facts",
+    "label": "Dobbs - Pokémon Facts",
+    "youtubePlaylistId": "PLnMCHbpZ7Etpw8w7tKTNEYr5PbPaEIcrv",
+    "note": "A collection of trivia, timelines, and top 10 lists by Dobbs."
+  },
+  {
+    "id": "filler_jimmy_whetzel_trivia",
+    "label": "Pokémon | Weird Facts and Trivia",
+    "youtubePlaylistId": "PLnuMz3NF_MyV6J-aK_ND2TtCx3orGpXpP",
+    "note": "A fun series covering obscure trivia, glitches, and localization facts."
+  },
+  {
+    "id": "filler_pokenational_docs",
+    "label": "PokéNational",
+    "youtubePlaylistId": "PL1p2ZkHnREs9iU5VTVxAZJw9J38dbvyeg",
+    "note": "Nature-style documentary shorts exploring the biology and lore of specific species."
+  },
+  {
+    "id": "filler_spm_grading",
+    "label": "What Grade Did You Get?",
+    "youtubePlaylistId": "PLXZpYnWXpo53I7udWh6_iZQcHLnwkS7Aw",
+    "note": "Shorts documenting the grading results of various TCG card pulls."
+  }
       ],
       "playlists": [
         {
