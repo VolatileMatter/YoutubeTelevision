@@ -39,16 +39,17 @@
       <div class="crt-fringe"></div>
       <div class="crt-noise"></div>
       <div class="crt-vignette"></div>
+      <div class="crt-ambient-flicker"></div>
     </div>
 
     <div class="crt-flicker"></div>
 
-    <!-- Sidebar collapse button (floats on left edge of screen) -->
+    <!-- Sidebar collapse button -->
     <button class="collapse-btn" id="sidebar-toggle" title="Toggle sidebar">
       <span class="arrow">◀</span>
     </button>
 
-    <!-- Panel collapse button (floats on right edge of screen) -->
+    <!-- Panel collapse button -->
     <button class="collapse-btn" id="panel-toggle" title="Toggle panel">
       <span class="arrow">▶</span>
     </button>
@@ -66,21 +67,23 @@
       <div id="panel-now-playing">
         <div id="np-channel">📺&nbsp;&nbsp;RetroTube TV</div>
         <div id="np-detail">Loading…</div>
-        <div id="shuffle-indicator">⇄ SHUFFLE</div>
       </div>
 
       <!-- Playback controls -->
       <div class="panel-section">
         <div class="panel-title">Playback</div>
         <button id="btn-skip">SKIP ▶▶</button>
-        <div style="margin-top:6px;">
-          <button class="toggle-btn" id="shuffle-toggle">
-            <span class="toggle-dot"></span>SHUFFLE
-          </button>
+
+        <!-- In Order ←→ Shuffle slider -->
+        <div class="mode-slider-wrap">
+          <span class="mode-label mode-label--left">IN ORDER</span>
+          <input type="range" id="order-shuffle-slider" min="0" max="1" step="1" value="1" />
+          <span class="mode-label mode-label--right">SHUFFLE</span>
         </div>
+        <div id="mode-indicator">SHUFFLE</div>
       </div>
 
-      <!-- CRT -->
+      <!-- CRT master toggle + intensity -->
       <div class="panel-section">
         <div class="panel-title">CRT</div>
         <button class="toggle-btn on" id="crt-toggle">
@@ -90,9 +93,47 @@
           <span class="knob-label">Intensity</span>
           <input type="range" id="crt-intensity-slider" min="0" max="100" value="40" />
         </div>
+
+        <!-- Collapsible effects palette -->
+        <div id="fx-palette-header" class="fx-palette-header">
+          <span class="fx-palette-arrow">▶</span>
+          <span>Edit TV Effects</span>
+        </div>
+        <div id="fx-palette-body" class="fx-palette-body">
+          <div class="fx-grid">
+            <label class="fx-item">
+              <input type="checkbox" id="fx-scanlines" checked />
+              <span>Scanlines</span>
+            </label>
+            <label class="fx-item">
+              <input type="checkbox" id="fx-glow" checked />
+              <span>Glow</span>
+            </label>
+            <label class="fx-item">
+              <input type="checkbox" id="fx-vignette" checked />
+              <span>Vignette</span>
+            </label>
+            <label class="fx-item">
+              <input type="checkbox" id="fx-noise" checked />
+              <span>Noise</span>
+            </label>
+            <label class="fx-item">
+              <input type="checkbox" id="fx-fringe" checked />
+              <span>Fringe</span>
+            </label>
+            <label class="fx-item">
+              <input type="checkbox" id="fx-blur" checked />
+              <span>Blur</span>
+            </label>
+            <label class="fx-item">
+              <input type="checkbox" id="fx-flicker" checked />
+              <span>Flicker</span>
+            </label>
+          </div>
+        </div>
       </div>
 
-      <!-- Playlist toggles (built by JS, hidden until channel selected) -->
+      <!-- Playlist toggles -->
       <div class="panel-section" id="playlist-toggle-section">
         <div class="panel-title">Playlists</div>
         <div id="playlist-toggle-list"><!-- built by JS --></div>

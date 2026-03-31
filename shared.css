@@ -19,7 +19,7 @@
   --panel-bg:     #080808;
   --panel-bg2:    #050505;
   --sidebar-w:    185px;
-  --panel-w:      200px;
+  --panel-w:      210px;
   --collapse-btn: 28px;
 }
 
@@ -34,11 +34,7 @@ html, body {
   user-select: none;
 }
 
-/* ── Root Layout ─────────────────────────────────────────────
-   Sidebar | Screen | Panel
-   Sidebar and Panel can collapse to 0.
-   The collapse-btn floats over the screen when panel/sidebar is hidden.
-   ─────────────────────────────────────────────────────────── */
+/* ── Root Layout ─────────────────────────────────────────────── */
 #app {
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr var(--panel-w);
@@ -65,7 +61,6 @@ html, body {
   position: relative;
   background: #000;
   overflow: hidden;
-  /* No height constraint — fills the full grid row */
 }
 
 #yt-player {
@@ -77,7 +72,7 @@ html, body {
   background: #000;
 }
 
-/* ── Collapse toggle buttons (floating over screen edges) ─── */
+/* ── Collapse buttons ────────────────────────────────────────── */
 .collapse-btn {
   position: absolute;
   top: 50%;
@@ -94,7 +89,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.12s, background 0.12s, opacity 0.2s;
+  transition: color 0.12s, background 0.12s;
   backdrop-filter: blur(4px);
 }
 .collapse-btn:hover { color: var(--phosphor); background: rgba(12,12,12,0.95); }
@@ -110,13 +105,12 @@ html, body {
   border-radius: 3px 0 0 3px;
 }
 
-/* Arrow flips when collapsed */
 #sidebar-toggle .arrow { display: inline-block; transition: transform 0.22s; }
 #panel-toggle   .arrow { display: inline-block; transition: transform 0.22s; }
 #app.sidebar-collapsed #sidebar-toggle .arrow { transform: rotate(180deg); }
 #app.panel-collapsed   #panel-toggle   .arrow { transform: rotate(180deg); }
 
-/* ── CRT Overlay ────────────────────────────────────────────── */
+/* ── CRT Overlay ─────────────────────────────────────────────── */
 #crt-overlay {
   position: absolute;
   inset: 0;
@@ -150,6 +144,30 @@ html, body {
   mix-blend-mode: screen;
 }
 
+/* Ambient flicker — subtle, always-on brightness pulse */
+.crt-ambient-flicker {
+  position: absolute; inset: 0; pointer-events: none;
+  background: rgba(200, 240, 192, 0.015);
+  animation: ambientFlicker 8s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes ambientFlicker {
+  0%   { opacity: 0.6; }
+  7%   { opacity: 1.0; }
+  8%   { opacity: 0.4; }
+  9%   { opacity: 0.9; }
+  15%  { opacity: 0.7; }
+  40%  { opacity: 0.85; }
+  41%  { opacity: 0.3; }
+  42%  { opacity: 0.9; }
+  60%  { opacity: 0.75; }
+  75%  { opacity: 1.0; }
+  76%  { opacity: 0.5; }
+  77%  { opacity: 0.95; }
+  100% { opacity: 0.6; }
+}
+
 @keyframes noiseAnim {
   0%   { background-position: 0 0; }
   25%  { background-position: -30px 15px; }
@@ -158,6 +176,7 @@ html, body {
   100% { background-position: 0 0; }
 }
 
+/* Channel-switch flicker */
 .crt-flicker {
   position: absolute; inset: 0;
   background: #fff; opacity: 0; pointer-events: none; z-index: 20;
@@ -254,13 +273,6 @@ html, body {
 }
 .ch-icon { font-size: 15px; flex-shrink: 0; }
 
-.shuffle-badge {
-  margin-left: auto; font-family: var(--font-mono);
-  font-size: 8px; letter-spacing: 1px; color: var(--amber);
-  opacity: 0; transition: opacity 0.2s; flex-shrink: 0;
-}
-body.shuffle-on .ch-btn.active .shuffle-badge { opacity: 1; }
-
 #sidebar-footer {
   padding: 10px 12px;
   border-top: 1px solid var(--ui-border);
@@ -289,7 +301,6 @@ body.shuffle-on .ch-btn.active .shuffle-badge { opacity: 1; }
   min-width: 0;
 }
 
-/* Panel scrollable inner content */
 #panel-inner {
   flex: 1;
   overflow-y: auto;
@@ -301,7 +312,6 @@ body.shuffle-on .ch-btn.active .shuffle-badge { opacity: 1; }
 #panel-inner::-webkit-scrollbar { width: 2px; }
 #panel-inner::-webkit-scrollbar-thumb { background: var(--ui-border); border-radius: 1px; }
 
-/* Clock at very top of panel */
 #panel-clock {
   font-family: var(--font-display);
   font-size: 28px;
@@ -314,7 +324,6 @@ body.shuffle-on .ch-btn.active .shuffle-badge { opacity: 1; }
   white-space: nowrap;
 }
 
-/* Now-playing info below clock */
 #panel-now-playing {
   padding: 6px 12px 10px;
   border-bottom: 1px solid var(--ui-border);
@@ -333,12 +342,6 @@ body.shuffle-on .ch-btn.active .shuffle-badge { opacity: 1; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   margin-top: 2px;
 }
-#shuffle-indicator {
-  font-family: var(--font-mono); font-size: 9px;
-  color: var(--amber); letter-spacing: 2px;
-  opacity: 0; transition: opacity 0.2s; margin-top: 1px;
-}
-body.shuffle-on #shuffle-indicator { opacity: 1; }
 
 /* Panel sections */
 .panel-section {
@@ -392,9 +395,6 @@ input[type=range]::-moz-range-thumb {
 .toggle-btn:hover { background: rgba(200,240,192,0.07); color: var(--phosphor); }
 .toggle-btn.on    { color: var(--phosphor); border-color: rgba(200,240,192,0.22); }
 
-#shuffle-toggle.on { color: var(--amber); border-color: rgba(255,179,71,0.3); }
-#shuffle-toggle.on .toggle-dot { background: var(--amber); box-shadow: 0 0 5px var(--amber); }
-
 .toggle-dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--red-led); box-shadow: 0 0 4px var(--red-led);
@@ -410,8 +410,122 @@ input[type=range]::-moz-range-thumb {
   color: rgba(200,240,192,0.55); font-family: var(--font-mono);
   font-size: 10px; letter-spacing: 1px; cursor: pointer;
   text-align: center; transition: background 0.12s, color 0.12s;
+  margin-bottom: 8px;
 }
 #btn-skip:hover { background: rgba(200,240,192,0.09); color: var(--phosphor); }
+
+/* ── Order / Shuffle mode slider ─────────────────────────────── */
+.mode-slider-wrap {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 8px;
+}
+
+.mode-label {
+  font-family: var(--font-mono); font-size: 8px;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  color: rgba(200,240,192,0.35); flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+/* Highlight active end */
+body:not(.shuffle-on) .mode-label--left  { color: var(--phosphor); }
+body.shuffle-on       .mode-label--right { color: var(--amber); }
+
+#order-shuffle-slider {
+  flex: 1;
+}
+/* Override thumb color for this slider when in shuffle */
+body.shuffle-on #order-shuffle-slider::-webkit-slider-thumb {
+  background: var(--amber);
+  box-shadow: 0 0 5px var(--amber);
+}
+body.shuffle-on #order-shuffle-slider::-moz-range-thumb {
+  background: var(--amber);
+  box-shadow: 0 0 5px var(--amber);
+}
+
+#mode-indicator {
+  font-family: var(--font-display);
+  font-size: 13px; letter-spacing: 2px;
+  color: rgba(200,240,192,0.35);
+  margin-top: 4px; text-align: center;
+  transition: color 0.2s;
+}
+body.shuffle-on #mode-indicator {
+  color: var(--amber);
+  text-shadow: 0 0 6px var(--amber);
+}
+
+/* ── Effects Palette ─────────────────────────────────────────── */
+.fx-palette-header {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 10px; padding: 5px 0;
+  font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: rgba(200,240,192,0.35);
+  cursor: pointer;
+  border-top: 1px solid var(--ui-border);
+  user-select: none;
+  transition: color 0.12s;
+}
+.fx-palette-header:hover { color: rgba(200,240,192,0.65); }
+.fx-palette-header.open  { color: rgba(200,240,192,0.65); }
+
+.fx-palette-arrow {
+  font-size: 8px;
+  display: inline-block;
+  transition: transform 0.18s;
+}
+.fx-palette-header.open .fx-palette-arrow { transform: rotate(90deg); }
+
+.fx-palette-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+.fx-palette-body.open {
+  max-height: 200px;
+}
+
+.fx-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 8px;
+  padding: 8px 0 4px;
+}
+
+.fx-item {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  color: rgba(200,240,192,0.45);
+  cursor: pointer;
+  transition: color 0.12s;
+}
+.fx-item:hover { color: rgba(200,240,192,0.75); }
+
+.fx-item input[type=checkbox] {
+  appearance: none; -webkit-appearance: none;
+  width: 10px; height: 10px;
+  border: 1px solid rgba(200,240,192,0.25);
+  border-radius: 1px;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.12s, border-color 0.12s;
+}
+.fx-item input[type=checkbox]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+}
+.fx-item input[type=checkbox]:checked::after {
+  content: '✓';
+  position: absolute; top: -3px; left: 1px;
+  font-size: 9px; color: #000;
+  font-family: var(--font-mono);
+}
 
 /* ── Playlist Toggles ────────────────────────────────────────── */
 #playlist-toggle-section { flex-shrink: 0; }
@@ -424,7 +538,6 @@ input[type=range]::-moz-range-thumb {
 .pl-toggle-row:last-child { border-bottom: none; }
 
 .pl-toggle-checkbox {
-  /* Hidden native checkbox, replaced by custom dot */
   appearance: none; -webkit-appearance: none;
   width: 12px; height: 12px;
   border: 1px solid rgba(200,240,192,0.25);
@@ -442,10 +555,8 @@ input[type=range]::-moz-range-thumb {
 }
 .pl-toggle-checkbox:checked::after {
   content: '✓';
-  position: absolute;
-  top: -2px; left: 1px;
-  font-size: 10px;
-  color: #000;
+  position: absolute; top: -2px; left: 1px;
+  font-size: 10px; color: #000;
   font-family: var(--font-mono);
 }
 

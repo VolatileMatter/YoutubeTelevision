@@ -3,9 +3,24 @@
  *
  * Channel model:
  *   - Each channel has its own optional filler[] array. If a channel has filler,
- *     one random video from one random filler playlist plays between episodes.
+ *     one random video from one random filler playlist plays between EVERY primary video.
  *   - If a channel has no filler, globalFiller is used as fallback (if set).
  *   - fillerChance in config (0–1) controls how often filler plays.
+ *
+ * Playback mode:
+ *   - IN ORDER: Cycles through playlists in sequence (playlist[0], playlist[1], ..., wrap).
+ *               Within each playlist, increments episode index via cookie.
+ *   - SHUFFLE:  Picks a random playlist from the active channel, random index within it.
+ *               Cookies are not consumed in shuffle mode.
+ *
+ * Filler:
+ *   - A filler video plays between every primary video (subject to fillerChance).
+ *   - Filler is always random regardless of playback mode.
+ *
+ * Effects:
+ *   - CRT settings (intensity + individual toggles) saved to cookies.
+ *   - Mild ambient flicker added to the CRT overlay at all times.
+ *   - "Edit TV Effects" palette is collapsible, closed by default.
  *
  * Playlist toggles:
  *   - The right panel shows checkboxes for each playlist in the active channel.
@@ -16,10 +31,20 @@
  * Collapsible panels:
  *   - Sidebar and right panel can each be collapsed via floating buttons.
  *   - State stored in sessionStorage.
- *
- * Shuffle mode:
- *   - Bypasses cookie tracking; picks random indices. Cookies untouched.
  */
+
+// ─── Debug logger ─────────────────────────────────────────────────────────────
+const LOG = {
+  tag: '[RTV]',
+  info  (...a) { console.log  (this.tag, ...a); },
+  warn  (...a) { console.warn (this.tag, ...a); },
+  error (...a) { console.error(this.tag, ...a); },
+  group (label, fn) {
+    console.groupCollapsed(this.tag + ' ' + label);
+    fn();
+    console.groupEnd();
+  },
+};
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const App = {
@@ -27,17 +52,19 @@ const App = {
   channels:        [],
   globalFiller:    null,
   activeChannelId: 'all',
-  shuffleMode:     false,
+  shuffleMode:     true,   // shuffle ON by default
   player:          null,
   playerReady:     false,
   current: {
-    channelId:  null,
-    playlistId: null,
-    isFiller:   false,
+    channelId:   null,
+    playlistId:  null,
+    isFiller:    false,
   },
-  pending:    null,   // episode queued while filler plays
-  watchLog:   {},     // { [playlistId]: { title, episode } }
-  disabled:   new Set(), // disabled playlist IDs this session
+  pending:         null,   // episode queued while filler plays
+  watchLog:        {},     // { [playlistId]: { title, episode } }
+  disabled:        new Set(),
+  // In-order rotation state: tracks which playlist index we're on per channel
+  playlistCursor:  {},     // { [channelId]: number }
 };
 
 // ─── Cookies ─────────────────────────────────────────────────────────────────
@@ -45,23 +72,74 @@ const Cookies = {
   PREFIX: 'rtv_',
   DAYS:   365,
   _key(id) { return this.PREFIX + id; },
-  get(playlistId) {
-    const name = this._key(playlistId) + '=';
+  get(id) {
+    const name = this._key(id) + '=';
     for (const p of decodeURIComponent(document.cookie).split(';')) {
       const t = p.trim();
       if (t.startsWith(name)) return parseInt(t.slice(name.length), 10) || 0;
     }
     return 0;
   },
-  set(playlistId, index) {
+  set(id, value) {
     const d = new Date();
     d.setTime(d.getTime() + this.DAYS * 86400000);
-    document.cookie = `${this._key(playlistId)}=${index};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+    document.cookie = `${this._key(id)}=${value};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+  },
+  setStr(id, value) {
+    const d = new Date();
+    d.setTime(d.getTime() + this.DAYS * 86400000);
+    document.cookie = `${this._key(id)}=${encodeURIComponent(value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+  },
+  getStr(id) {
+    const name = this._key(id) + '=';
+    for (const p of decodeURIComponent(document.cookie).split(';')) {
+      const t = p.trim();
+      if (t.startsWith(name)) return decodeURIComponent(t.slice(name.length));
+    }
+    return null;
   },
   consume(playlistId) {
     const i = this.get(playlistId);
     this.set(playlistId, i + 1);
+    LOG.info(`Cookie consume [${playlistId}]: was ${i}, now ${i + 1}`);
     return i;
+  },
+};
+
+// ─── Effects cookie helpers ───────────────────────────────────────────────────
+const EffectsCookies = {
+  COOKIE_ID: 'effects_state',
+  defaults() {
+    return {
+      crtEnabled:   true,
+      intensity:    0.4,
+      scanlines:    true,
+      glow:         true,
+      vignette:     true,
+      noise:        true,
+      fringe:       true,
+      blur:         true,
+      flicker:      true,
+    };
+  },
+  save(state) {
+    Cookies.setStr(this.COOKIE_ID, JSON.stringify(state));
+    LOG.info('Effects saved to cookie:', state);
+  },
+  load() {
+    const raw = Cookies.getStr(this.COOKIE_ID);
+    if (!raw) {
+      LOG.info('No effects cookie found, using defaults');
+      return this.defaults();
+    }
+    try {
+      const parsed = { ...this.defaults(), ...JSON.parse(raw) };
+      LOG.info('Effects loaded from cookie:', parsed);
+      return parsed;
+    } catch {
+      LOG.warn('Failed to parse effects cookie, using defaults');
+      return this.defaults();
+    }
   },
 };
 
@@ -72,9 +150,12 @@ function randomIndex()   { return Math.floor(Math.random() * 500); }
 function shouldPlayFiller(channel) {
   const fillerList = getFillerForChannel(channel);
   if (!fillerList.length) return false;
-  // Skip if all filler playlist IDs are still placeholders
   if (fillerList.every(p => p.youtubePlaylistId.startsWith('PLACEHOLDER'))) return false;
-  return Math.random() < (App.config.fillerChance ?? 0.4);
+  const roll = Math.random();
+  const chance = App.config.fillerChance ?? 0.4;
+  const result = roll < chance;
+  LOG.info(`Filler check: roll=${roll.toFixed(2)} chance=${chance} → ${result ? 'YES' : 'NO'}`);
+  return result;
 }
 
 function getFillerForChannel(channel) {
@@ -83,15 +164,30 @@ function getFillerForChannel(channel) {
 }
 
 // ─── Channel / playlist helpers ───────────────────────────────────────────────
-function getChannelById(id) { return App.channels.find(c => c.id === id) ?? null; }
+function getChannelById(id) {
+  const ch = App.channels.find(c => c.id === id) ?? null;
+  if (!ch && id !== 'all') LOG.warn(`getChannelById: no channel found for id="${id}"`);
+  return ch;
+}
 
 function getActivePlaylists() {
-  // Returns enabled playlists only
-  const all = App.activeChannelId === 'all'
-    ? App.channels.flatMap(ch => ch.playlists.map(pl => ({ channelId: ch.id, playlist: pl })))
-    : (getChannelById(App.activeChannelId)?.playlists ?? [])
-        .map(pl => ({ channelId: App.activeChannelId, playlist: pl }));
-  return all.filter(({ playlist }) => !App.disabled.has(playlist.id));
+  let all;
+  if (App.activeChannelId === 'all') {
+    all = App.channels.flatMap(ch =>
+      ch.playlists.map(pl => ({ channelId: ch.id, playlist: pl }))
+    );
+  } else {
+    const ch = getChannelById(App.activeChannelId);
+    if (!ch) {
+      LOG.error(`getActivePlaylists: channel "${App.activeChannelId}" not found!`);
+      return [];
+    }
+    all = ch.playlists.map(pl => ({ channelId: ch.id, playlist: pl }));
+  }
+  const enabled = all.filter(({ playlist }) => !App.disabled.has(playlist.id));
+  LOG.info(`getActivePlaylists [channel="${App.activeChannelId}"]:`,
+    enabled.map(e => `${e.channelId}/${e.playlist.id}`));
+  return enabled;
 }
 
 function findPlaylistAnywhere(playlistId) {
@@ -104,12 +200,36 @@ function findPlaylistAnywhere(playlistId) {
   return App.globalFiller?.playlists.find(p => p.id === playlistId) ?? null;
 }
 
+// ─── In-order playlist cursor ─────────────────────────────────────────────────
+function getNextPlaylistInOrder(channelId) {
+  const options = getActivePlaylists();
+  if (!options.length) return null;
+
+  // Filter to just the current channel if not 'all'
+  const pool = channelId === 'all' ? options :
+    options.filter(o => o.channelId === channelId);
+
+  if (!pool.length) {
+    LOG.warn(`getNextPlaylistInOrder: empty pool for channelId="${channelId}"`);
+    return null;
+  }
+
+  const cursor = App.playlistCursor[channelId] ?? 0;
+  const idx    = cursor % pool.length;
+  App.playlistCursor[channelId] = cursor + 1;
+
+  const chosen = pool[idx];
+  LOG.info(`In-order cursor [${channelId}]: slot ${idx}/${pool.length} → playlist "${chosen.playlist.id}"`);
+  return chosen;
+}
+
 // ─── YouTube IFrame API ───────────────────────────────────────────────────────
 window.onYouTubeIframeAPIReady = function () {
+  LOG.info('YouTube IFrame API ready, creating player…');
   App.player = new YT.Player('yt-player', {
     playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, iv_load_policy: 3 },
     events: {
-      onReady:       () => { App.playerReady = true; playNext(); },
+      onReady:       () => { App.playerReady = true; LOG.info('Player ready'); playNext(); },
       onStateChange: onPlayerStateChange,
       onError:       onPlayerError,
     },
@@ -117,29 +237,55 @@ window.onYouTubeIframeAPIReady = function () {
 };
 
 function onPlayerStateChange(event) {
+  const stateNames = { '-1': 'UNSTARTED', 0: 'ENDED', 1: 'PLAYING', 2: 'PAUSED', 3: 'BUFFERING', 5: 'CUED' };
+  LOG.info(`Player state: ${stateNames[event.data] ?? event.data}`);
   if (event.data === YT.PlayerState.ENDED)   handleVideoEnded();
   if (event.data === YT.PlayerState.PLAYING) captureNowPlayingTitle();
 }
 
 function onPlayerError(event) {
-  console.warn('YT error:', event.data);
+  LOG.error(`YouTube player error code: ${event.data}`);
   App.current.isFiller ? loadPendingEpisode() : playNext();
 }
 
 // ─── Playback ─────────────────────────────────────────────────────────────────
 function playNext() {
+  LOG.group('playNext()', () => {
+    LOG.info(`Mode: ${App.shuffleMode ? 'SHUFFLE' : 'IN ORDER'} | Channel: ${App.activeChannelId}`);
+  });
+
   const options = getActivePlaylists();
   if (!options.length) { showStatic('NO SIGNAL'); return; }
 
-  const { channelId, playlist } = pickRandom(options);
-  const index = App.shuffleMode ? randomIndex() : Cookies.consume(playlist.id);
-  const episode = { channelId, playlistId: playlist.id, index };
+  let chosen;
+  if (App.shuffleMode) {
+    chosen = pickRandom(options);
+    LOG.info(`Shuffle picked: channel="${chosen.channelId}" playlist="${chosen.playlist.id}"`);
+  } else {
+    chosen = getNextPlaylistInOrder(App.activeChannelId);
+    if (!chosen) { showStatic('NO SIGNAL'); return; }
+  }
 
+  const { channelId, playlist } = chosen;
+
+  // Validate the channel matches what we expect
+  if (App.activeChannelId !== 'all' && channelId !== App.activeChannelId) {
+    LOG.error(`MISMATCH! activeChannelId="${App.activeChannelId}" but chosen channelId="${channelId}"`);
+  }
+
+  const index = App.shuffleMode
+    ? randomIndex()
+    : Cookies.consume(playlist.id);
+
+  LOG.info(`Loading: channel="${channelId}" playlist="${playlist.id}" ytId="${playlist.youtubePlaylistId}" index=${index}`);
+
+  const episode = { channelId, playlistId: playlist.id, index };
   updateNowPlaying(channelId, playlist.label, index);
   setAccentColor(channelId);
 
   const channel = getChannelById(channelId);
   if (shouldPlayFiller(channel)) {
+    LOG.info('Queuing filler before episode');
     App.pending = episode;
     playFiller(channel);
   } else {
@@ -148,10 +294,16 @@ function playNext() {
 }
 
 function loadEpisode({ channelId, playlistId, index }) {
+  LOG.info(`loadEpisode: channel="${channelId}" playlist="${playlistId}" index=${index}`);
   App.current = { channelId, playlistId, isFiller: false };
   hideStatic();
   const pl = findPlaylistAnywhere(playlistId);
-  if (!pl) { playNext(); return; }
+  if (!pl) {
+    LOG.error(`loadEpisode: playlist "${playlistId}" not found anywhere!`);
+    playNext();
+    return;
+  }
+  LOG.info(`loadPlaylist: ytId="${pl.youtubePlaylistId}" index=${index}`);
   App.player.loadPlaylist({ list: pl.youtubePlaylistId, listType: 'playlist', index, startSeconds: 0 });
 }
 
@@ -159,29 +311,46 @@ function playFiller(channel) {
   const fillerList = getFillerForChannel(channel).filter(
     p => !p.youtubePlaylistId.startsWith('PLACEHOLDER')
   );
-  if (!fillerList.length) { loadPendingEpisode(); return; }
-
+  if (!fillerList.length) {
+    LOG.warn('No valid filler found, skipping to episode');
+    loadPendingEpisode();
+    return;
+  }
   const pl    = pickRandom(fillerList);
   const index = randomIndex();
+  LOG.info(`playFiller: "${pl.id}" ytId="${pl.youtubePlaylistId}" index=${index}`);
   App.current = { channelId: 'filler', playlistId: pl.id, isFiller: true };
   updateNowPlaying(null, pl.label, index);
   App.player.loadPlaylist({ list: pl.youtubePlaylistId, listType: 'playlist', index, startSeconds: 0 });
 }
 
 function handleVideoEnded() {
+  LOG.info(`handleVideoEnded: isFiller=${App.current.isFiller}`);
   App.current.isFiller ? loadPendingEpisode() : playNext();
 }
 
 function loadPendingEpisode() {
   const ep = App.pending; App.pending = null;
+  LOG.info('loadPendingEpisode:', ep ? `channel="${ep.channelId}" playlist="${ep.playlistId}"` : 'none, calling playNext');
   ep ? loadEpisode(ep) : playNext();
 }
 
 // ─── Channel switching ────────────────────────────────────────────────────────
 function switchChannel(channelId) {
-  if (channelId === App.activeChannelId) return;
+  LOG.info(`switchChannel: "${channelId}" (was "${App.activeChannelId}")`);
+  if (channelId === App.activeChannelId) {
+    LOG.info('switchChannel: same channel, ignoring');
+    return;
+  }
   App.activeChannelId = channelId;
-  document.querySelectorAll('.ch-btn').forEach(b => b.classList.toggle('active', b.dataset.id === channelId));
+  LOG.info(`switchChannel: App.activeChannelId is now "${App.activeChannelId}"`);
+
+  document.querySelectorAll('.ch-btn').forEach(b => {
+    const match = b.dataset.id === channelId;
+    b.classList.toggle('active', match);
+    LOG.info(`  btn[data-id="${b.dataset.id}"] active=${match}`);
+  });
+
   setAccentColor(channelId === 'all' ? null : channelId);
   triggerCRTFlicker();
   renderPlaylistToggles();
@@ -189,11 +358,17 @@ function switchChannel(channelId) {
   if (App.playerReady) playNext();
 }
 
-// ─── Shuffle ──────────────────────────────────────────────────────────────────
+// ─── Shuffle / order mode ─────────────────────────────────────────────────────
 function setShuffleMode(on) {
+  LOG.info(`setShuffleMode: ${on}`);
   App.shuffleMode = on;
   document.body.classList.toggle('shuffle-on', on);
-  document.getElementById('shuffle-toggle').classList.toggle('on', on);
+
+  const slider = document.getElementById('order-shuffle-slider');
+  if (slider) slider.value = on ? 1 : 0;
+
+  const label = document.getElementById('order-shuffle-label');
+  if (label) label.textContent = on ? 'SHUFFLE' : 'IN ORDER';
 }
 
 // ─── Playlist toggles ─────────────────────────────────────────────────────────
@@ -201,8 +376,7 @@ function renderPlaylistToggles() {
   const list = document.getElementById('playlist-toggle-list');
   list.innerHTML = '';
 
-  // Determine which playlists to show
-  let entries; // [{ channelId, playlist }]
+  let entries;
   if (App.activeChannelId === 'all') {
     entries = App.channels.flatMap(ch =>
       ch.playlists.map(pl => ({ channelId: ch.id, playlist: pl }))
@@ -217,7 +391,6 @@ function renderPlaylistToggles() {
     return;
   }
 
-  // In "all" mode, group by channel
   const showChannelLabel = App.activeChannelId === 'all';
   let lastChannelId = null;
 
@@ -262,11 +435,11 @@ function renderPlaylistToggles() {
 }
 
 function onPlaylistToggle(playlistId, enabled, allEntries) {
+  LOG.info(`onPlaylistToggle: playlist="${playlistId}" enabled=${enabled}`);
   if (!enabled) {
-    // Don't allow disabling the last enabled playlist
     const enabledCount = allEntries.filter(({ playlist }) => !App.disabled.has(playlist.id)).length;
     if (enabledCount <= 1) {
-      // Re-check the box
+      LOG.warn('Cannot disable last enabled playlist');
       const cb = document.querySelector(`[data-playlist-id="${playlistId}"]`);
       if (cb) cb.checked = true;
       return;
@@ -275,7 +448,6 @@ function onPlaylistToggle(playlistId, enabled, allEntries) {
   } else {
     App.disabled.delete(playlistId);
   }
-  // Persist to sessionStorage
   sessionStorage.setItem('rtv_disabled', JSON.stringify([...App.disabled]));
 }
 
@@ -283,7 +455,8 @@ function loadDisabledState() {
   try {
     const saved = sessionStorage.getItem('rtv_disabled');
     if (saved) App.disabled = new Set(JSON.parse(saved));
-  } catch {}
+    LOG.info('Loaded disabled playlists:', [...App.disabled]);
+  } catch { LOG.warn('Failed to load disabled state'); }
 }
 
 // ─── Watch Log ────────────────────────────────────────────────────────────────
@@ -294,9 +467,9 @@ function captureNowPlayingTitle() {
   const data  = App.player.getVideoData?.();
   const title = data?.title ?? null;
   const ep    = Cookies.get(playlistId);
+  LOG.info(`Now playing: playlist="${playlistId}" ep=${ep} title="${title}"`);
   App.watchLog[playlistId] = { title, episode: ep };
   renderWatchLog();
-  // Also update the episode count in the playlist toggle list
   const epEl = document.getElementById(`pl-ep-${playlistId}`);
   if (epEl) epEl.textContent = ep > 0 ? `${ep}` : '—';
 }
@@ -357,7 +530,9 @@ function updateNowPlaying(channelId, playlistLabel, index) {
 
 function setAccentColor(channelId) {
   const ch = channelId ? getChannelById(channelId) : null;
-  document.documentElement.style.setProperty('--accent', ch?.accentColor ?? '#c8f0c0');
+  const color = ch?.accentColor ?? '#c8f0c0';
+  document.documentElement.style.setProperty('--accent', color);
+  LOG.info(`Accent color set to ${color} for channel="${channelId}"`);
 }
 
 function showStatic(msg = 'NO SIGNAL') {
@@ -377,7 +552,74 @@ function triggerCRTFlicker() {
   f.addEventListener('animationend', () => f.classList.remove('active'), { once: true });
 }
 
-// ─── CRT ─────────────────────────────────────────────────────────────────────
+// ─── CRT Effects ─────────────────────────────────────────────────────────────
+let _effectsState = null;
+
+function getEffectsState() {
+  return _effectsState;
+}
+
+function applyEffectsState(state) {
+  _effectsState = state;
+
+  const overlay = document.getElementById('crt-overlay');
+  if (overlay) overlay.style.opacity = state.crtEnabled ? '1' : '0';
+
+  setCRTIntensity(state.intensity);
+
+  const el = (sel) => document.querySelector(sel);
+
+  const scanlines = el('.crt-scanlines');
+  if (scanlines) scanlines.style.display = state.scanlines ? '' : 'none';
+
+  const glow = el('.crt-glow');
+  if (glow) glow.style.display = state.glow ? '' : 'none';
+
+  const vig = el('.crt-vignette');
+  if (vig) vig.style.display = state.vignette ? '' : 'none';
+
+  const noise = el('.crt-noise');
+  if (noise) noise.style.display = state.noise ? '' : 'none';
+
+  const fringe = el('.crt-fringe');
+  if (fringe) fringe.style.display = state.fringe ? '' : 'none';
+
+  const blur = el('.crt-blur');
+  if (blur) blur.style.display = state.blur ? '' : 'none';
+
+  // Ambient flicker
+  const ambientFlicker = el('.crt-ambient-flicker');
+  if (ambientFlicker) {
+    ambientFlicker.style.display = state.flicker ? '' : 'none';
+  }
+
+  // Sync UI controls
+  syncEffectsUI(state);
+  EffectsCookies.save(state);
+}
+
+function syncEffectsUI(state) {
+  const setToggle = (id, on) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.classList.toggle('on', on);
+  };
+  const setCheck = (id, on) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = on;
+  };
+
+  setToggle('crt-toggle', state.crtEnabled);
+  const slider = document.getElementById('crt-intensity-slider');
+  if (slider) slider.value = state.intensity * 100;
+  setCheck('fx-scanlines', state.scanlines);
+  setCheck('fx-glow',      state.glow);
+  setCheck('fx-vignette',  state.vignette);
+  setCheck('fx-noise',     state.noise);
+  setCheck('fx-fringe',    state.fringe);
+  setCheck('fx-blur',      state.blur);
+  setCheck('fx-flicker',   state.flicker);
+}
+
 function setCRTIntensity(value) {
   const v = Math.max(0, Math.min(1, value));
   document.documentElement.style.setProperty('--crt-intensity', v);
@@ -410,11 +652,6 @@ function setCRTIntensity(value) {
 
   const fringe = document.querySelector('.crt-fringe');
   if (fringe) fringe.style.opacity = v < 0.4 ? 0 : ((v - 0.4) / 0.6) * 0.9;
-}
-
-function toggleCRT(on) {
-  document.getElementById('crt-overlay').style.opacity = on ? '1' : '0';
-  document.getElementById('crt-toggle').classList.toggle('on', on);
 }
 
 // ─── Clock ───────────────────────────────────────────────────────────────────
@@ -450,6 +687,7 @@ function buildChannelList() {
       list.appendChild(makeChannelBtn(ch.id, ch.icon, ch.label, false));
     }
   }
+  LOG.info('Channel list built:', App.channels.map(c => c.id));
 }
 
 function makeChannelBtn(id, icon, label, active) {
@@ -457,9 +695,11 @@ function makeChannelBtn(id, icon, label, active) {
   btn.className = 'ch-btn' + (active ? ' active' : '');
   btn.dataset.id = id;
   btn.innerHTML =
-    `<span class="ch-icon">${icon}</span><span>${label}</span>` +
-    `<span class="shuffle-badge">RND</span>`;
-  btn.addEventListener('click', () => switchChannel(id));
+    `<span class="ch-icon">${icon}</span><span>${label}</span>`;
+  btn.addEventListener('click', () => {
+    LOG.info(`Channel button clicked: data-id="${id}"`);
+    switchChannel(id);
+  });
   return btn;
 }
 
@@ -467,7 +707,6 @@ function makeChannelBtn(id, icon, label, active) {
 function wireCollapseButtons() {
   const app = document.getElementById('app');
 
-  // Restore from sessionStorage
   if (sessionStorage.getItem('rtv_sidebar_collapsed') === '1') app.classList.add('sidebar-collapsed');
   if (sessionStorage.getItem('rtv_panel_collapsed')   === '1') app.classList.add('panel-collapsed');
 
@@ -484,31 +723,83 @@ function wireCollapseButtons() {
 
 // ─── Wire controls ────────────────────────────────────────────────────────────
 function wireControls() {
-  const crtSlider = document.getElementById('crt-intensity-slider');
-  const init = App.config.crtIntensity ?? 0.4;
-  crtSlider.value = init * 100;
-  setCRTIntensity(init);
+  const state = EffectsCookies.load();
 
-  crtSlider.addEventListener('input', () => {
-    const v = crtSlider.value / 100;
-    setCRTIntensity(v);
-    document.getElementById('crt-toggle').classList.toggle('on', v > 0);
+  // CRT master toggle
+  const crtToggle = document.getElementById('crt-toggle');
+  crtToggle.addEventListener('click', () => {
+    const s = getEffectsState();
+    s.crtEnabled = !s.crtEnabled;
+    applyEffectsState(s);
+    LOG.info(`CRT master toggle → ${s.crtEnabled}`);
   });
 
-  let crtOn = App.config.crtEnabled !== false;
-  const crtToggle = document.getElementById('crt-toggle');
-  if (crtOn) crtToggle.classList.add('on');
-  crtToggle.addEventListener('click', () => { crtOn = !crtOn; toggleCRT(crtOn); });
+  // Intensity slider
+  const crtSlider = document.getElementById('crt-intensity-slider');
+  crtSlider.addEventListener('input', () => {
+    const s = getEffectsState();
+    s.intensity = crtSlider.value / 100;
+    applyEffectsState(s);
+  });
 
-  document.getElementById('shuffle-toggle').addEventListener('click', () => setShuffleMode(!App.shuffleMode));
+  // Order/Shuffle slider
+  const modeSlider = document.getElementById('order-shuffle-slider');
+  modeSlider.addEventListener('input', () => {
+    const on = parseInt(modeSlider.value, 10) === 1;
+    setShuffleMode(on);
+  });
+
+  // Skip button
   document.getElementById('btn-skip').addEventListener('click', () => {
+    LOG.info('Skip button clicked');
     triggerCRTFlicker();
     if (App.playerReady) playNext();
   });
+
+  // Effects palette toggle
+  const fxHeader = document.getElementById('fx-palette-header');
+  const fxBody   = document.getElementById('fx-palette-body');
+  fxHeader.addEventListener('click', () => {
+    const open = fxBody.classList.toggle('open');
+    fxHeader.classList.toggle('open', open);
+    sessionStorage.setItem('rtv_fx_open', open ? '1' : '0');
+  });
+  // Restore palette open state
+  if (sessionStorage.getItem('rtv_fx_open') === '1') {
+    fxBody.classList.add('open');
+    fxHeader.classList.add('open');
+  }
+
+  // Individual effect checkboxes
+  const effectMap = {
+    'fx-scanlines': 'scanlines',
+    'fx-glow':      'glow',
+    'fx-vignette':  'vignette',
+    'fx-noise':     'noise',
+    'fx-fringe':    'fringe',
+    'fx-blur':      'blur',
+    'fx-flicker':   'flicker',
+  };
+  for (const [elId, key] of Object.entries(effectMap)) {
+    const el = document.getElementById(elId);
+    if (!el) continue;
+    el.addEventListener('change', () => {
+      const s = getEffectsState();
+      s[key] = el.checked;
+      LOG.info(`Effect "${key}" → ${el.checked}`);
+      applyEffectsState(s);
+    });
+  }
+
+  // Apply loaded state to DOM
+  applyEffectsState(state);
+  // Start in shuffle mode
+  setShuffleMode(true);
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
+  LOG.info('init() start');
   showStatic('LOADING…');
   loadDisabledState();
 
@@ -519,13 +810,19 @@ async function init() {
     data = await res.json();
   } catch (e) {
     showStatic('ERROR: channels.json');
-    console.error(e);
+    LOG.error('Failed to load channels.json:', e);
     return;
   }
 
   App.config       = data.config       || {};
   App.channels     = data.channels     || [];
   App.globalFiller = data.globalFiller || null;
+
+  LOG.group('Loaded data', () => {
+    LOG.info('Config:', App.config);
+    LOG.info('Channels:', App.channels.map(c => ({ id: c.id, label: c.label, playlists: c.playlists.map(p => p.id) })));
+    LOG.info('GlobalFiller:', App.globalFiller);
+  });
 
   document.title = App.config.siteName || 'RetroTube TV';
   document.getElementById('site-title').textContent = App.config.siteName || 'RetroTube TV';
@@ -540,6 +837,7 @@ async function init() {
   const tag = document.createElement('script');
   tag.src = 'https://www.youtube.com/iframe_api';
   document.head.appendChild(tag);
+  LOG.info('YouTube API script injected');
 }
 
 document.addEventListener('DOMContentLoaded', init);
