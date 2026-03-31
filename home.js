@@ -260,15 +260,15 @@ function onPlayerStateChange(event) {
     } else if (event.data === YT.PlayerState.PLAYING && App._sawUnstarted) {
       App.awaitingNewPlaylist = false;
       App._sawUnstarted = false;
-      LOG.info('New playlist confirmed playing — capturing title');
-      captureNowPlayingTitle();
+      LOG.info('New playlist confirmed playing — capturing title (deferred 800ms)');
+      setTimeout(captureNowPlayingTitle, 800);
     } else {
-      LOG.info('Suppressing stale PLAYING event (awaitingNewPlaylist guard active)');
+      LOG.info(`Ignoring non-PLAYING state during awaitingNewPlaylist: ${stateNames[event.data] ?? event.data}`);
     }
     return;
   }
 
-  if (event.data === YT.PlayerState.PLAYING) captureNowPlayingTitle();
+  if (event.data === YT.PlayerState.PLAYING) setTimeout(captureNowPlayingTitle, 800);
 }
 
 function onPlayerError(event) {
