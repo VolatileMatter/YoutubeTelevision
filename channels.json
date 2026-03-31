@@ -19,28 +19,42 @@
   },
   "channels": [
     {
-      "id": "pokemon",
-      "label": "Pokémon",
-      "icon": "⚡",
-      "accentColor": "#FFCB05",
+      "id": "kids",
+      "label": "Kids Block",
+      "icon": "🌟",
+      "accentColor": "#FFD700",
+      "group": "Channels",
+      "description": "Cartoons and kids shows, shuffled together",
       "playlists": [
         {
           "id": "pokemon_og",
-          "label": "Original Series",
-          "youtubePlaylistId": "PLRcHmntfmJ8BNpfON92grhkv6WxuqF5vD"
+          "label": "Pokémon",
+          "youtubePlaylistId": "PLHSbAz1hu9sQ3QnzWt9FfziadvDOfSXTR"
+        },
+        {
+          "id": "mlp_fim",
+          "label": "My Little Pony: FiM",
+          "youtubePlaylistId": "PLUHTFqUs5bpFG015CP_50Mqi8JElF_HJs"
+        },
+        {
+          "id": "teen_titans",
+          "label": "Teen Titans",
+          "youtubePlaylistId": "PLCVuwQ1eXVCWwvP2W0bB0MgAZv2rXW7av"
         }
       ]
     },
     {
-      "id": "mlp",
-      "label": "My Little Pony",
-      "icon": "🌈",
-      "accentColor": "#C8A2C8",
+      "id": "cottagecore",
+      "label": "Cottagecore",
+      "icon": "🌿",
+      "accentColor": "#8fbc8f",
+      "group": "Channels",
+      "description": "Cozy, slow, nature-forward vibes",
       "playlists": [
         {
-          "id": "mlp_fim",
-          "label": "Friendship is Magic",
-          "youtubePlaylistId": "YOUR_MLP_PLAYLIST_ID_HERE"
+          "id": "cottagecore_main",
+          "label": "Cottagecore Vibes",
+          "youtubePlaylistId": "PLY7D7qD8JTWrmnnO0Jqz0QluJfY-rNOon"
         }
       ]
     }

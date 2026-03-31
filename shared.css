@@ -33,7 +33,7 @@ html, body {
 #app {
   display: grid;
   grid-template-rows: 1fr 50px;
-  grid-template-columns: 180px 1fr 160px;
+  grid-template-columns: 190px 1fr 160px;
   grid-template-areas:
     "sidebar screen panel"
     "sidebar controls panel";
@@ -58,16 +58,16 @@ html, body {
   background: #000;
 }
 
-/* ── CRT Overlay (pointer-events: none so clicks reach iframe) ─ */
+/* ── CRT Overlay ────────────────────────────────────────────── */
 #crt-overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 10;
   overflow: hidden;
+  transition: opacity 0.3s;
 }
 
-/* Scanlines */
 #crt-overlay::before {
   content: '';
   position: absolute;
@@ -82,7 +82,6 @@ html, body {
   opacity: var(--crt-intensity);
 }
 
-/* Vignette */
 #crt-overlay::after {
   content: '';
   position: absolute;
@@ -91,7 +90,6 @@ html, body {
   opacity: calc(var(--crt-intensity) * 1.4);
 }
 
-/* Animated noise grain */
 .crt-noise {
   position: absolute;
   inset: 0;
@@ -110,7 +108,6 @@ html, body {
   100% { background-position: 0 0;        opacity: calc(var(--crt-intensity) * 0.05); }
 }
 
-/* Channel-switch flash */
 .crt-flicker {
   position: absolute;
   inset: 0;
@@ -131,7 +128,7 @@ html, body {
   100% { opacity: 0;    }
 }
 
-/* ── Static / No-Signal Screen ──────────────────────────────── */
+/* ── Static Screen ──────────────────────────────────────────── */
 #static-screen {
   position: absolute;
   inset: 0;
@@ -183,6 +180,7 @@ html, body {
 #sidebar-header {
   padding: 14px 12px 10px;
   border-bottom: 1px solid var(--ui-border);
+  flex-shrink: 0;
 }
 
 #site-title {
@@ -206,17 +204,30 @@ html, body {
 #channel-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 #channel-list::-webkit-scrollbar { width: 3px; }
 #channel-list::-webkit-scrollbar-thumb { background: var(--ui-border); border-radius: 2px; }
+
+/* Group label */
+.ch-group-label {
+  padding: 10px 12px 4px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(200,240,192,0.25);
+  border-top: 1px solid var(--ui-border);
+  margin-top: 4px;
+}
+.ch-group-label:first-child { border-top: none; margin-top: 0; }
 
 .ch-btn {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 9px 12px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -239,7 +250,20 @@ html, body {
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent);
 }
-.ch-icon { font-size: 18px; flex-shrink: 0; }
+.ch-icon { font-size: 16px; flex-shrink: 0; }
+
+/* Shuffle badge shown next to channel name when shuffle is on */
+.shuffle-badge {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--amber);
+  opacity: 0;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+body.shuffle-on .ch-btn.active .shuffle-badge { opacity: 1; }
 
 #sidebar-footer {
   padding: 10px 12px;
@@ -251,6 +275,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .led {
@@ -352,6 +377,16 @@ input[type=range]::-moz-range-thumb {
 .toggle-btn:hover { background: rgba(200,240,192,0.09); color: var(--phosphor); }
 .toggle-btn.on    { color: var(--phosphor); border-color: rgba(200,240,192,0.26); }
 
+/* Shuffle toggle gets amber accent when on */
+#shuffle-toggle.on {
+  color: var(--amber);
+  border-color: rgba(255,179,71,0.35);
+}
+#shuffle-toggle.on .toggle-dot {
+  background: var(--amber);
+  box-shadow: 0 0 5px var(--amber);
+}
+
 .toggle-dot {
   width: 7px; height: 7px;
   border-radius: 50%;
@@ -378,10 +413,7 @@ input[type=range]::-moz-range-thumb {
   flex-shrink: 0;
 }
 
-#now-playing {
-  flex: 1;
-  overflow: hidden;
-}
+#now-playing { flex: 1; overflow: hidden; }
 
 #np-channel {
   font-family: var(--font-display);
@@ -405,6 +437,18 @@ input[type=range]::-moz-range-thumb {
   text-overflow: ellipsis;
   margin-top: 2px;
 }
+
+/* Shuffle indicator in now-playing area */
+#shuffle-indicator {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--amber);
+  letter-spacing: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  margin-top: 1px;
+}
+body.shuffle-on #shuffle-indicator { opacity: 1; }
 
 .ctrl-btn {
   padding: 5px 12px;

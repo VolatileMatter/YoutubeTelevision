@@ -10,7 +10,7 @@
 
 <div id="app">
 
-  <!-- ── Sidebar: channel list ─────────────────────────────── -->
+  <!-- ── Sidebar ───────────────────────────────────────────── -->
   <aside id="sidebar">
     <div id="sidebar-header">
       <div id="site-title">RetroTube TV</div>
@@ -25,54 +25,54 @@
     </div>
   </aside>
 
-  <!-- ── Main screen ───────────────────────────────────────── -->
+  <!-- ── Screen ────────────────────────────────────────────── -->
   <main id="screen-wrap">
-
-    <!-- YouTube player target -->
     <div id="yt-player"></div>
 
-    <!-- Static / no-signal overlay -->
     <div id="static-screen">
       <div class="static-noise-bg"></div>
       <div id="static-message">NO SIGNAL</div>
     </div>
 
-    <!-- CRT effects overlay (pointer-events: none) -->
     <div id="crt-overlay">
       <div class="crt-noise"></div>
     </div>
 
-    <!-- Channel-switch flash -->
     <div class="crt-flicker"></div>
-
   </main>
 
-  <!-- ── Right panel: settings ─────────────────────────────── -->
+  <!-- ── Right Panel ───────────────────────────────────────── -->
   <aside id="panel">
 
     <div>
       <div class="panel-title">CRT</div>
-
       <button class="toggle-btn on" id="crt-toggle">
         <span class="toggle-dot"></span>
         SCANLINES
       </button>
-
-      <div class="knob-row" style="margin-top: 10px;">
+      <div class="knob-row" style="margin-top:10px;">
         <span class="knob-label">Intensity</span>
         <input type="range" id="crt-intensity-slider" min="0" max="100" value="40" />
       </div>
     </div>
 
+    <div>
+      <div class="panel-title">Playback</div>
+      <button class="toggle-btn" id="shuffle-toggle">
+        <span class="toggle-dot"></span>
+        SHUFFLE
+      </button>
+    </div>
+
   </aside>
 
-  <!-- ── Bottom controls bar ───────────────────────────────── -->
+  <!-- ── Controls Bar ──────────────────────────────────────── -->
   <footer id="controls-bar">
     <div id="now-playing">
       <div id="np-channel">📺&nbsp;&nbsp;RetroTube TV</div>
       <div id="np-detail">Loading…</div>
+      <div id="shuffle-indicator">⇄ SHUFFLE MODE</div>
     </div>
-
     <button class="ctrl-btn" id="btn-skip">SKIP ▶▶</button>
     <div id="clock">--:--</div>
   </footer>

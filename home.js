@@ -1,43 +1,44 @@
 /**
  * RetroTube TV — home.js
  *
- * How it works:
- *  - Fetches channels.json on load
- *  - Builds the channel list in the sidebar
- *  - On "All Channels" (default), picks a random playlist from any channel each time
- *  - On a specific channel, picks a random playlist only from that channel
- *  - Within a chosen playlist, plays episodes sequentially using a per-playlist
- *    index stored in a browser cookie — so progress survives page reloads
- *  - After each episode, maybe inserts one filler video (configurable chance)
- *  - CRT overlay intensity is controlled by a real CSS variable slider
+ * Channel model:
+ *   Each channel has one or more playlists. When a channel is active, the app
+ *   picks a random playlist from that channel's pool and plays the next
+ *   sequential episode (tracked via per-playlist cookie). "All Channels"
+ *   picks randomly from every playlist across every channel.
  *
- * To add channels or playlists: edit channels.json only.
+ * Shuffle mode:
+ *   When enabled, cookie tracking is suspended. Instead of consuming the saved
+ *   index, a random index (0–499, safely beyond most playlist lengths) is
+ *   chosen each time. Progress cookies are left untouched so normal viewing
+ *   resumes from where it left off when shuffle is turned off.
+ *
+ * To add a channel or playlist: edit channels.json only.
  */
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const App = {
-  config:          null,   // from channels.json
-  channels:        [],     // from channels.json
-  filler:          null,   // from channels.json
-  activeChannelId: 'all',  // 'all' or a channel id string
-  player:          null,   // YT.Player instance
+  config:          null,
+  channels:        [],
+  filler:          null,
+  activeChannelId: 'all',
+  shuffleMode:     false,
+  player:          null,
   playerReady:     false,
-  // What's currently loaded:
   current: {
     channelId:  null,
     playlistId: null,
     isFiller:   false,
   },
-  // After filler finishes, load this episode:
-  pending: null,  // { channelId, playlistId, index }
+  pending: null, // { channelId, playlistId, index } queued after filler
 };
 
 // ─── Cookie helpers ───────────────────────────────────────────────────────────
 const Cookies = {
-  PREFIX:   'rtv_',
-  DAYS:     365,
+  PREFIX: 'rtv_',
+  DAYS:   365,
 
-  _key(playlistId) { return this.PREFIX + playlistId; },
+  _key(id) { return this.PREFIX + id; },
 
   get(playlistId) {
     const name = this._key(playlistId) + '=';
@@ -51,17 +52,16 @@ const Cookies = {
   set(playlistId, index) {
     const d = new Date();
     d.setTime(d.getTime() + this.DAYS * 86400000);
-    document.cookie = `${this._key(playlistId)}=${index};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+    document.cookie =
+      `${this._key(playlistId)}=${index};expires=${d.toUTCString()};path=/;SameSite=Lax`;
   },
 
-  // Returns the current index to play, then increments it in the cookie.
+  // Read current index, then advance it. Returns the index to play NOW.
   consume(playlistId) {
     const index = this.get(playlistId);
     this.set(playlistId, index + 1);
     return index;
   },
-
-  reset(playlistId) { this.set(playlistId, 0); },
 };
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
@@ -69,12 +69,26 @@ function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function randomIndex() {
+  // Random position 0–499. YouTube will clamp to playlist length automatically.
+  return Math.floor(Math.random() * 500);
+}
+
 function shouldPlayFiller() {
+  const fillerPlaylists = App.filler?.playlists ?? [];
+  if (fillerPlaylists.length === 0) return false;
+  // Don't show filler if the filler playlist ID isn't set yet
+  if (fillerPlaylists.every(p => p.youtubePlaylistId.startsWith('YOUR_'))) return false;
   return Math.random() < (App.config.fillerChance ?? 0.4);
 }
 
+// ─── Channel / playlist helpers ───────────────────────────────────────────────
+function getChannelById(id) {
+  return App.channels.find(c => c.id === id) ?? null;
+}
+
 /**
- * Collect all playlists visible under the current active channel.
+ * Returns array of { channelId, playlist } for the active channel selection.
  * 'all' → every playlist from every channel.
  */
 function getActivePlaylists() {
@@ -83,21 +97,24 @@ function getActivePlaylists() {
       ch.playlists.map(pl => ({ channelId: ch.id, playlist: pl }))
     );
   }
-  const ch = App.channels.find(c => c.id === App.activeChannelId);
+  const ch = getChannelById(App.activeChannelId);
   if (!ch) return [];
   return ch.playlists.map(pl => ({ channelId: ch.id, playlist: pl }));
 }
 
-function getChannelById(id) {
-  return App.channels.find(c => c.id === id) || null;
+function findPlaylist(playlistId) {
+  for (const ch of App.channels) {
+    const found = ch.playlists.find(p => p.id === playlistId);
+    if (found) return found;
+  }
+  if (App.filler) {
+    const found = App.filler.playlists.find(p => p.id === playlistId);
+    if (found) return found;
+  }
+  return null;
 }
 
-function getFillerPlaylists() {
-  return App.filler?.playlists ?? [];
-}
-
-// ─── YouTube IFrame API bootstrap ────────────────────────────────────────────
-// The API calls this globally once it's ready.
+// ─── YouTube IFrame API ───────────────────────────────────────────────────────
 window.onYouTubeIframeAPIReady = function () {
   App.player = new YT.Player('yt-player', {
     playerVars: {
@@ -121,32 +138,22 @@ function onPlayerReady() {
 }
 
 function onPlayerStateChange(event) {
-  // YT.PlayerState.ENDED === 0
   if (event.data === YT.PlayerState.ENDED) {
     handleVideoEnded();
   }
 }
 
 function onPlayerError(event) {
-  // Error codes: 2 = bad param, 5 = HTML5 error, 100 = not found/private,
-  // 101/150 = embedding not allowed.
   console.warn('YouTube player error:', event.data);
-
+  // Error codes 100, 101, 150 = video unavailable/not embeddable → skip it
   if (App.current.isFiller) {
-    // Filler errored — just move to the pending episode directly
     loadPendingEpisode();
   } else {
-    // Episode errored (likely video removed/private) — skip it and try next
     playNext();
   }
 }
 
-// ─── Playback logic ───────────────────────────────────────────────────────────
-/**
- * Pick a random playlist from active channels, get the next sequential
- * episode index from its cookie, and play it.
- * If fillerChance triggers, play a filler video first and queue the episode.
- */
+// ─── Playback ─────────────────────────────────────────────────────────────────
 function playNext() {
   const options = getActivePlaylists();
   if (options.length === 0) {
@@ -155,26 +162,26 @@ function playNext() {
   }
 
   const { channelId, playlist } = pickRandom(options);
-  const index = Cookies.consume(playlist.id);
+
+  // In shuffle mode, pick a random index without touching the cookie.
+  // In normal mode, consume the cookie (read + increment).
+  const index = App.shuffleMode
+    ? randomIndex()
+    : Cookies.consume(playlist.id);
+
   const episode = { channelId, playlistId: playlist.id, index };
 
   updateNowPlaying(channelId, playlist.label, index);
   setAccentColor(channelId);
 
-  const fillerPlaylists = getFillerPlaylists();
-  if (fillerPlaylists.length > 0 && shouldPlayFiller()) {
-    // Stash the real episode, play filler first
+  if (shouldPlayFiller()) {
     App.pending = episode;
-    playFiller(episode);
+    playFiller();
   } else {
     loadEpisode(episode);
   }
 }
 
-/**
- * Load a specific episode: play playlist starting at the given index.
- * YouTube's LIST + INDEX param plays playlist from that position.
- */
 function loadEpisode({ channelId, playlistId, index }) {
   App.current = { channelId, playlistId, isFiller: false };
   hideStatic();
@@ -183,28 +190,28 @@ function loadEpisode({ channelId, playlistId, index }) {
   if (!playlist) { playNext(); return; }
 
   App.player.loadPlaylist({
-    list:       playlist.youtubePlaylistId,
-    listType:   'playlist',
-    index:      index,
+    list:         playlist.youtubePlaylistId,
+    listType:     'playlist',
+    index:        index,
     startSeconds: 0,
   });
 }
 
-function playFiller(pendingEpisode) {
-  App.pending = pendingEpisode;
-  App.current = { channelId: 'filler', playlistId: null, isFiller: true };
+function playFiller() {
+  const fillerPlaylists = App.filler?.playlists ?? [];
+  if (fillerPlaylists.length === 0) { loadPendingEpisode(); return; }
 
-  const fillerPlaylists = getFillerPlaylists();
   const pl = pickRandom(fillerPlaylists);
-  const index = Cookies.consume(pl.id);
+  // Filler always uses a random index — we don't track filler progress
+  const index = randomIndex();
 
-  App.current.playlistId = pl.id;
+  App.current = { channelId: 'filler', playlistId: pl.id, isFiller: true };
   updateNowPlaying(null, 'Filler', index);
 
   App.player.loadPlaylist({
-    list:     pl.youtubePlaylistId,
-    listType: 'playlist',
-    index:    index,
+    list:         pl.youtubePlaylistId,
+    listType:     'playlist',
+    index:        index,
     startSeconds: 0,
   });
 }
@@ -218,26 +225,10 @@ function handleVideoEnded() {
 }
 
 function loadPendingEpisode() {
-  if (App.pending) {
-    const ep = App.pending;
-    App.pending = null;
-    loadEpisode(ep);
-  } else {
-    playNext();
-  }
-}
-
-function findPlaylist(playlistId) {
-  for (const ch of App.channels) {
-    const found = ch.playlists.find(p => p.id === playlistId);
-    if (found) return found;
-  }
-  // Check filler playlists too
-  if (App.filler) {
-    const found = App.filler.playlists.find(p => p.id === playlistId);
-    if (found) return found;
-  }
-  return null;
+  const ep = App.pending;
+  App.pending = null;
+  if (ep) loadEpisode(ep);
+  else playNext();
 }
 
 // ─── Channel switching ────────────────────────────────────────────────────────
@@ -245,37 +236,40 @@ function switchChannel(channelId) {
   if (channelId === App.activeChannelId) return;
   App.activeChannelId = channelId;
 
-  // Update sidebar active state
   document.querySelectorAll('.ch-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.id === channelId);
   });
 
+  setAccentColor(channelId === 'all' ? null : channelId);
   triggerCRTFlicker();
-
-  if (App.playerReady) {
-    playNext();
-  }
+  if (App.playerReady) playNext();
 }
 
-// ─── UI: Now Playing ─────────────────────────────────────────────────────────
+// ─── Shuffle mode ─────────────────────────────────────────────────────────────
+function setShuffleMode(on) {
+  App.shuffleMode = on;
+  document.body.classList.toggle('shuffle-on', on);
+
+  const btn = document.getElementById('shuffle-toggle');
+  btn.classList.toggle('on', on);
+}
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
 function updateNowPlaying(channelId, playlistLabel, index) {
   const ch = channelId ? getChannelById(channelId) : null;
   document.getElementById('np-channel').textContent =
     ch ? `${ch.icon}  ${ch.label}` : '📺  RetroTube TV';
   document.getElementById('np-detail').textContent =
-    `${playlistLabel}  —  EP. ${index + 1}`;
+    `${playlistLabel}  —  ${App.shuffleMode ? 'SHUFFLE' : `EP. ${index + 1}`}`;
 }
 
 function setAccentColor(channelId) {
-  const ch = getChannelById(channelId);
-  const color = ch?.accentColor ?? '#c8f0c0';
-  document.documentElement.style.setProperty('--accent', color);
+  const ch = channelId ? getChannelById(channelId) : null;
+  document.documentElement.style.setProperty('--accent', ch?.accentColor ?? '#c8f0c0');
 }
 
-// ─── UI: Static screen ───────────────────────────────────────────────────────
 function showStatic(msg = 'NO SIGNAL') {
-  const el = document.getElementById('static-screen');
-  el.classList.remove('hidden');
+  document.getElementById('static-screen').classList.remove('hidden');
   document.getElementById('static-message').textContent = msg;
 }
 
@@ -283,30 +277,24 @@ function hideStatic() {
   document.getElementById('static-screen').classList.add('hidden');
 }
 
-// ─── CRT ─────────────────────────────────────────────────────────────────────
 function triggerCRTFlicker() {
   const f = document.querySelector('.crt-flicker');
   if (!f) return;
   f.classList.remove('active');
-  // Force reflow so the animation restarts
-  void f.offsetWidth;
+  void f.offsetWidth; // force reflow
   f.classList.add('active');
   f.addEventListener('animationend', () => f.classList.remove('active'), { once: true });
 }
 
 function setCRTIntensity(value) {
-  // value: 0–1
   document.documentElement.style.setProperty('--crt-intensity', value);
 }
 
 function toggleCRT(on) {
-  const overlay = document.getElementById('crt-overlay');
-  overlay.style.opacity = on ? '1' : '0';
-  const btn = document.getElementById('crt-toggle');
-  btn.classList.toggle('on', on);
+  document.getElementById('crt-overlay').style.opacity = on ? '1' : '0';
+  document.getElementById('crt-toggle').classList.toggle('on', on);
 }
 
-// ─── Clock ───────────────────────────────────────────────────────────────────
 function startClock() {
   function tick() {
     const now = new Date();
@@ -318,56 +306,77 @@ function startClock() {
   setInterval(tick, 10000);
 }
 
-// ─── Build sidebar channels ───────────────────────────────────────────────────
+// ─── Build sidebar ────────────────────────────────────────────────────────────
 function buildChannelList() {
   const list = document.getElementById('channel-list');
   list.innerHTML = '';
 
-  // "All Channels" button
-  const allBtn = document.createElement('button');
-  allBtn.className = 'ch-btn active';
-  allBtn.dataset.id = 'all';
-  allBtn.innerHTML = `<span class="ch-icon">📺</span><span>All Channels</span>`;
-  allBtn.addEventListener('click', () => switchChannel('all'));
-  list.appendChild(allBtn);
-
-  // One button per channel
+  // Collect unique groups in the order they appear
+  const groups = [];
+  const seen = new Set();
   for (const ch of App.channels) {
-    const btn = document.createElement('button');
-    btn.className = 'ch-btn';
-    btn.dataset.id = ch.id;
-    btn.innerHTML = `<span class="ch-icon">${ch.icon}</span><span>${ch.label}</span>`;
-    btn.addEventListener('click', () => switchChannel(ch.id));
-    list.appendChild(btn);
+    const g = ch.group || 'Channels';
+    if (!seen.has(g)) { groups.push(g); seen.add(g); }
+  }
+
+  // "All Channels" at the top, outside any group
+  list.appendChild(makeChannelBtn('all', '📺', 'All Channels', true));
+
+  for (const group of groups) {
+    const label = document.createElement('div');
+    label.className = 'ch-group-label';
+    label.textContent = group;
+    list.appendChild(label);
+
+    for (const ch of App.channels.filter(c => (c.group || 'Channels') === group)) {
+      list.appendChild(makeChannelBtn(ch.id, ch.icon, ch.label, false));
+    }
   }
 }
 
-// ─── Panel controls wiring ────────────────────────────────────────────────────
+function makeChannelBtn(id, icon, label, active) {
+  const btn = document.createElement('button');
+  btn.className = 'ch-btn' + (active ? ' active' : '');
+  btn.dataset.id = id;
+  btn.innerHTML =
+    `<span class="ch-icon">${icon}</span>` +
+    `<span>${label}</span>` +
+    `<span class="shuffle-badge">RND</span>`;
+  btn.addEventListener('click', () => switchChannel(id));
+  return btn;
+}
+
+// ─── Wire panel controls ──────────────────────────────────────────────────────
 function wireControls() {
-  // CRT intensity slider
+  // CRT intensity
   const crtSlider = document.getElementById('crt-intensity-slider');
-  crtSlider.value = (App.config.crtIntensity ?? 0.4) * 100;
-  setCRTIntensity(App.config.crtIntensity ?? 0.4);
+  const initialIntensity = App.config.crtIntensity ?? 0.4;
+  crtSlider.value = initialIntensity * 100;
+  setCRTIntensity(initialIntensity);
 
   crtSlider.addEventListener('input', () => {
     const v = crtSlider.value / 100;
     setCRTIntensity(v);
-    // Keep the toggle in sync — if you drag to 0, mark it off
-    const btn = document.getElementById('crt-toggle');
-    if (v === 0) btn.classList.remove('on');
-    else btn.classList.add('on');
+    if (v === 0) document.getElementById('crt-toggle').classList.remove('on');
+    else         document.getElementById('crt-toggle').classList.add('on');
   });
 
-  // CRT on/off toggle
-  const crtToggle = document.getElementById('crt-toggle');
+  // CRT toggle
   let crtOn = App.config.crtEnabled !== false;
+  const crtToggle = document.getElementById('crt-toggle');
   if (crtOn) crtToggle.classList.add('on');
   crtToggle.addEventListener('click', () => {
     crtOn = !crtOn;
     toggleCRT(crtOn);
   });
 
-  // Skip button
+  // Shuffle toggle
+  const shuffleToggle = document.getElementById('shuffle-toggle');
+  shuffleToggle.addEventListener('click', () => {
+    setShuffleMode(!App.shuffleMode);
+  });
+
+  // Skip
   document.getElementById('btn-skip').addEventListener('click', () => {
     triggerCRTFlicker();
     if (App.playerReady) playNext();
@@ -381,9 +390,10 @@ async function init() {
   let data;
   try {
     const res = await fetch('channels.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     data = await res.json();
   } catch (e) {
-    showStatic('ERROR: could not load channels.json');
+    showStatic('ERROR: channels.json');
     console.error(e);
     return;
   }
@@ -399,7 +409,6 @@ async function init() {
   wireControls();
   startClock();
 
-  // Inject the YouTube IFrame API script — onYouTubeIframeAPIReady fires when done
   const tag = document.createElement('script');
   tag.src = 'https://www.youtube.com/iframe_api';
   document.head.appendChild(tag);
