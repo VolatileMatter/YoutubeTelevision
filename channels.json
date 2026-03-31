@@ -5,26 +5,27 @@
     "crtIntensity": 0.4,
     "fillerChance": 0.4
   },
-  "filler": {
-    "id": "filler",
-    "label": "Filler",
-    "description": "Random interstitial content shown between episodes",
-    "playlists": [
-      {
-        "id": "filler_main",
-        "label": "Interstitials",
-        "youtubePlaylistId": "YOUR_FILLER_PLAYLIST_ID_HERE"
-      }
-    ]
-  },
   "channels": [
     {
-      "id": "kids",
-      "label": "Kids Block",
-      "icon": "🌟",
-      "accentColor": "#FFD700",
+      "id": "pocket_monsters",
+      "label": "Pocket Monsters",
+      "icon": "⚡",
+      "accentColor": "#FFCB05",
       "group": "Channels",
-      "description": "Cartoons and kids shows, shuffled together",
+      "filler": [
+        {
+          "id": "filler_pm",
+          "label": "Pocket Monsters Shorts",
+          "youtubePlaylistId": "PLY7D7qD8JTWrb5K67JomeUa2Wl9AEFEKJ",
+          "note": "Probably mostly shorts."
+        },
+        {
+          "id":"JWittzPokemon",
+          "label":"JWittz's Pokemon Videos",
+          "youtubePlaylistId":"PL41Inn0WJmpnd-RGdglxp89bcpUkAmTdL",
+          "note":"None."
+        }
+      ],
       "playlists": [
         {
           "id": "pokemon_og",
@@ -32,14 +33,47 @@
           "youtubePlaylistId": "PLHSbAz1hu9sQ3QnzWt9FfziadvDOfSXTR"
         },
         {
+          "id": "digimon",
+          "label": "Digimon",
+          "youtubePlaylistId": "PLdk1HWx2zmIFGS60LMC3VEBRVtZiI5HSM"
+        },
+        {
+          "id": "bakugan",
+          "label": "Bakugan",
+          "youtubePlaylistId": "PLZIlBv3nBuXfdluVi9Aun2dH4b45C8tNK"
+        }
+      ]
+    },
+    {
+      "id": "unicorn",
+      "label": "Unicorn",
+      "icon": "🦄",
+      "accentColor": "#C8A2C8",
+      "group": "Channels",
+      "playlists": [
+        {
           "id": "mlp_fim",
           "label": "My Little Pony: FiM",
           "youtubePlaylistId": "PLUHTFqUs5bpFG015CP_50Mqi8JElF_HJs"
-        },
+        }
+      ]
+    },
+    {
+      "id": "cartoon_network",
+      "label": "Cartoon Network",
+      "icon": "📺",
+      "accentColor": "#00BFFF",
+      "group": "Channels",
+      "playlists": [
         {
           "id": "teen_titans",
           "label": "Teen Titans",
           "youtubePlaylistId": "PLCVuwQ1eXVCWwvP2W0bB0MgAZv2rXW7av"
+        },
+        {
+          "id": "invader_zim",
+          "label": "Invader Zim",
+          "youtubePlaylistId": "PLJp5zuT8pfY-NRiLhrXJRh9giwOeRTg07"
         }
       ]
     },
@@ -49,7 +83,6 @@
       "icon": "🌿",
       "accentColor": "#8fbc8f",
       "group": "Channels",
-      "description": "Cozy, slow, nature-forward vibes",
       "playlists": [
         {
           "id": "cottagecore_main",
@@ -58,5 +91,17 @@
         }
       ]
     }
-  ]
+  ],
+  "globalFiller": {
+    "id": "global_filler",
+    "label": "Global Filler",
+    "playlists": [
+      {
+        "id": "filler_main",
+        "label": "Interstitials",
+        "youtubePlaylistId": "PLACEHOLDER_global_filler_playlist_id",
+        "note": "Optional: a catch-all filler playlist used for channels without their own filler"
+      }
+    ]
+  }
 }

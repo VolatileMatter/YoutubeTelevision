@@ -16,17 +16,15 @@
       <div id="site-title">RetroTube TV</div>
       <div id="site-sub">ON&nbsp;AIR</div>
     </div>
-    <div id="channel-list">
-      <!-- Populated by home.js -->
-    </div>
+    <div id="channel-list"><!-- built by JS --></div>
     <div id="sidebar-footer">
-      <span class="led"></span>
-      LIVE
+      <span class="led"></span>LIVE
     </div>
   </aside>
 
   <!-- ── Screen ────────────────────────────────────────────── -->
   <main id="screen-wrap">
+
     <div id="yt-player"></div>
 
     <div id="static-screen">
@@ -44,50 +42,70 @@
     </div>
 
     <div class="crt-flicker"></div>
+
+    <!-- Sidebar collapse button (floats on left edge of screen) -->
+    <button class="collapse-btn" id="sidebar-toggle" title="Toggle sidebar">
+      <span class="arrow">◀</span>
+    </button>
+
+    <!-- Panel collapse button (floats on right edge of screen) -->
+    <button class="collapse-btn" id="panel-toggle" title="Toggle panel">
+      <span class="arrow">▶</span>
+    </button>
+
   </main>
 
   <!-- ── Right Panel ───────────────────────────────────────── -->
   <aside id="panel">
+    <div id="panel-inner">
 
-    <div>
-      <div class="panel-title">CRT</div>
-      <button class="toggle-btn on" id="crt-toggle">
-        <span class="toggle-dot"></span>
-        SCANLINES
-      </button>
-      <div class="knob-row" style="margin-top:10px;">
-        <span class="knob-label">Intensity</span>
-        <input type="range" id="crt-intensity-slider" min="0" max="100" value="40" />
+      <!-- Clock -->
+      <div id="panel-clock">--:--</div>
+
+      <!-- Now Playing -->
+      <div id="panel-now-playing">
+        <div id="np-channel">📺&nbsp;&nbsp;RetroTube TV</div>
+        <div id="np-detail">Loading…</div>
+        <div id="shuffle-indicator">⇄ SHUFFLE</div>
       </div>
-    </div>
 
-    <div>
-      <div class="panel-title">Playback</div>
-      <button class="toggle-btn" id="shuffle-toggle">
-        <span class="toggle-dot"></span>
-        SHUFFLE
-      </button>
-    </div>
-
-    <div class="watch-log-section">
-      <div class="panel-title">Watch Log</div>
-      <div id="watch-log-list">
-        <!-- Populated by home.js -->
+      <!-- Playback controls -->
+      <div class="panel-section">
+        <div class="panel-title">Playback</div>
+        <button id="btn-skip">SKIP ▶▶</button>
+        <div style="margin-top:6px;">
+          <button class="toggle-btn" id="shuffle-toggle">
+            <span class="toggle-dot"></span>SHUFFLE
+          </button>
+        </div>
       </div>
-    </div>
 
+      <!-- CRT -->
+      <div class="panel-section">
+        <div class="panel-title">CRT</div>
+        <button class="toggle-btn on" id="crt-toggle">
+          <span class="toggle-dot"></span>SCANLINES
+        </button>
+        <div class="knob-row" style="margin-top:6px;">
+          <span class="knob-label">Intensity</span>
+          <input type="range" id="crt-intensity-slider" min="0" max="100" value="40" />
+        </div>
+      </div>
+
+      <!-- Playlist toggles (built by JS, hidden until channel selected) -->
+      <div class="panel-section" id="playlist-toggle-section">
+        <div class="panel-title">Playlists</div>
+        <div id="playlist-toggle-list"><!-- built by JS --></div>
+      </div>
+
+      <!-- Watch Log -->
+      <div class="watch-log-section">
+        <div class="panel-title">Watch Log</div>
+        <div id="watch-log-list"><!-- built by JS --></div>
+      </div>
+
+    </div>
   </aside>
-
-  <!-- ── Controls Bar ──────────────────────────────────────── -->
-  <footer id="controls-bar">
-    <div id="now-playing">
-      <div id="np-channel">📺&nbsp;&nbsp;RetroTube TV</div>
-      <div id="np-detail">Loading…</div>
-      <div id="shuffle-indicator">⇄ SHUFFLE MODE</div>
-    </div>
-    <button class="ctrl-btn" id="btn-skip">SKIP ▶▶</button>
-    <div id="clock">--:--</div>
-  </footer>
 
 </div>
 
