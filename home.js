@@ -60,11 +60,17 @@ const App = {
     playlistId:  null,
     isFiller:    false,
   },
-  pending:         null,   // episode queued while filler plays
-  watchLog:        {},     // { [playlistId]: { title, episode } }
-  disabled:        new Set(),
+  pending:              null,   // episode queued while filler plays
+  watchLog:             {},     // { [playlistId]: { title, episode } }
+  disabled:             new Set(),
   // In-order rotation state: tracks which playlist index we're on per channel
-  playlistCursor:  {},     // { [channelId]: number }
+  playlistCursor:       {},     // { [channelId]: number }
+  // Guard: true immediately after loadPlaylist() is called.
+  // The YouTube player fires PLAYING for the OLD video one last time before
+  // the new playlist takes over. We skip captureNowPlayingTitle() during
+  // that stale event by waiting for the first UNSTARTED→PLAYING transition.
+  awaitingNewPlaylist:  false,
+  _sawUnstarted:        false,
 };
 
 // ─── Cookies ─────────────────────────────────────────────────────────────────
@@ -238,8 +244,30 @@ window.onYouTubeIframeAPIReady = function () {
 
 function onPlayerStateChange(event) {
   const stateNames = { '-1': 'UNSTARTED', 0: 'ENDED', 1: 'PLAYING', 2: 'PAUSED', 3: 'BUFFERING', 5: 'CUED' };
-  LOG.info(`Player state: ${stateNames[event.data] ?? event.data}`);
-  if (event.data === YT.PlayerState.ENDED)   handleVideoEnded();
+  LOG.info(`Player state: ${stateNames[event.data] ?? event.data} | awaitingNewPlaylist=${App.awaitingNewPlaylist} sawUnstarted=${App._sawUnstarted}`);
+
+  if (event.data === YT.PlayerState.ENDED) {
+    handleVideoEnded();
+    return;
+  }
+
+  if (App.awaitingNewPlaylist) {
+    // We need to see UNSTARTED (-1) first — that's the new playlist resetting —
+    // then the next PLAYING event is the real new video.
+    if (event.data === YT.PlayerState.UNSTARTED) {
+      App._sawUnstarted = true;
+      LOG.info('Got UNSTARTED after loadPlaylist — next PLAYING will be the new video');
+    } else if (event.data === YT.PlayerState.PLAYING && App._sawUnstarted) {
+      App.awaitingNewPlaylist = false;
+      App._sawUnstarted = false;
+      LOG.info('New playlist confirmed playing — capturing title');
+      captureNowPlayingTitle();
+    } else {
+      LOG.info('Suppressing stale PLAYING event (awaitingNewPlaylist guard active)');
+    }
+    return;
+  }
+
   if (event.data === YT.PlayerState.PLAYING) captureNowPlayingTitle();
 }
 
@@ -304,6 +332,8 @@ function loadEpisode({ channelId, playlistId, index }) {
     return;
   }
   LOG.info(`loadPlaylist: ytId="${pl.youtubePlaylistId}" index=${index}`);
+  App.awaitingNewPlaylist = true;
+  App._sawUnstarted = false;
   App.player.loadPlaylist({ list: pl.youtubePlaylistId, listType: 'playlist', index, startSeconds: 0 });
 }
 
@@ -321,6 +351,8 @@ function playFiller(channel) {
   LOG.info(`playFiller: "${pl.id}" ytId="${pl.youtubePlaylistId}" index=${index}`);
   App.current = { channelId: 'filler', playlistId: pl.id, isFiller: true };
   updateNowPlaying(null, pl.label, index);
+  App.awaitingNewPlaylist = true;
+  App._sawUnstarted = false;
   App.player.loadPlaylist({ list: pl.youtubePlaylistId, listType: 'playlist', index, startSeconds: 0 });
 }
 
