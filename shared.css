@@ -59,6 +59,12 @@ html, body {
 }
 
 /* ── CRT Overlay ────────────────────────────────────────────── */
+/*
+ * Intensity-dependent values (blur, opacity, shadow) are all set by JS
+ * via inline styles, because CSS calc() cannot feed into filter/backdrop-filter.
+ * At intensity=0 everything is hidden. At intensity=1 it is dramatic.
+ */
+
 #crt-overlay {
   position: absolute;
   inset: 0;
@@ -68,28 +74,43 @@ html, body {
   transition: opacity 0.3s;
 }
 
-#crt-overlay::before {
-  content: '';
+/* Scanlines — thickness and darkness driven by JS */
+.crt-scanlines {
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0px,
-    transparent 2px,
-    rgba(0,0,0,0.22) 2px,
-    rgba(0,0,0,0.22) 4px
+  pointer-events: none;
+}
+
+/* Phosphor glow/bleed — green bloom, blur set by JS */
+.crt-glow {
+  position: absolute;
+  inset: -6px;
+  pointer-events: none;
+  background: rgba(100, 255, 100, 0.025);
+  mix-blend-mode: screen;
+}
+
+/* Screen softness — backdrop-filter blur set by JS */
+.crt-blur {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Vignette — opacity set by JS */
+.crt-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 38%,
+    rgba(0, 0, 0, 0.6) 72%,
+    rgba(0, 0, 0, 0.95) 100%
   );
-  opacity: var(--crt-intensity);
 }
 
-#crt-overlay::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.82) 100%);
-  opacity: calc(var(--crt-intensity) * 1.4);
-}
-
+/* Noise grain — opacity set by JS */
 .crt-noise {
   position: absolute;
   inset: 0;
@@ -101,11 +122,26 @@ html, body {
 }
 
 @keyframes noiseAnim {
-  0%   { background-position: 0 0;        opacity: calc(var(--crt-intensity) * 0.06); }
-  25%  { background-position: -30px 15px; opacity: calc(var(--crt-intensity) * 0.04); }
-  50%  { background-position: 20px -10px; opacity: calc(var(--crt-intensity) * 0.07); }
-  75%  { background-position: -10px 30px; opacity: calc(var(--crt-intensity) * 0.03); }
-  100% { background-position: 0 0;        opacity: calc(var(--crt-intensity) * 0.05); }
+  0%   { background-position: 0 0; }
+  25%  { background-position: -30px 15px; }
+  50%  { background-position: 20px -10px; }
+  75%  { background-position: -10px 30px; }
+  100% { background-position: 0 0; }
+}
+
+/* RGB fringe / chromatic aberration — opacity set by JS */
+.crt-fringe {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 0,   0,   0.018) 0px,
+    rgba(0,   255, 0,   0.012) 2px,
+    rgba(0,   0,   255, 0.018) 4px,
+    transparent                 6px
+  );
+  mix-blend-mode: screen;
 }
 
 .crt-flicker {

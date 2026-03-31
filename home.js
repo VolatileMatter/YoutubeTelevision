@@ -287,11 +287,73 @@ function triggerCRTFlicker() {
 }
 
 function setCRTIntensity(value) {
-  document.documentElement.style.setProperty('--crt-intensity', value);
+  // value: 0.0 – 1.0
+  // Each effect is tuned independently so the progression feels natural.
+  // At 0 everything is invisible. At 1 it's a genuinely worn-out CRT.
+
+  const v = Math.max(0, Math.min(1, value));
+  document.documentElement.style.setProperty('--crt-intensity', v);
+
+  // ── Scanlines ──────────────────────────────────────────────────
+  // At low intensity: faint thin lines. At high: thick dark bars.
+  const lineOpacity  = 0.12 + v * 0.68;       // 0.12 → 0.80
+  const lineSize     = v < 0.5
+    ? 4                                         // thin lines at low intensity
+    : 4 + Math.round((v - 0.5) * 8);           // up to 8px thick at max
+  const darkBand     = Math.min(lineSize - 1, lineSize * 0.6);
+  const sl = document.querySelector('.crt-scanlines');
+  if (sl) {
+    sl.style.background = v === 0 ? 'none' :
+      `repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent ${lineSize - darkBand}px,
+        rgba(0,0,0,${lineOpacity}) ${lineSize - darkBand}px,
+        rgba(0,0,0,${lineOpacity}) ${lineSize}px
+      )`;
+    sl.style.opacity = v === 0 ? '0' : '1';
+  }
+
+  // ── Phosphor glow / bleed ──────────────────────────────────────
+  // Gaussian blur on the glow layer creates bloom around bright areas.
+  const glowBlur    = v * 7;                   // 0 → 7px
+  const glowOpacity = v * 0.55;                // 0 → 0.55
+  const glow = document.querySelector('.crt-glow');
+  if (glow) {
+    glow.style.filter  = `blur(${glowBlur}px)`;
+    glow.style.opacity = glowOpacity;
+  }
+
+  // ── Screen blur (phosphor softness) ───────────────────────────
+  // backdrop-filter blurs the iframe itself — feels like a soft CRT phosphor.
+  // Kept subtle even at max so content stays readable.
+  const screenBlur = v * 1.4;                  // 0 → 1.4px
+  const blurEl = document.querySelector('.crt-blur');
+  if (blurEl) {
+    blurEl.style.backdropFilter       = screenBlur > 0 ? `blur(${screenBlur}px)` : 'none';
+    blurEl.style.webkitBackdropFilter = screenBlur > 0 ? `blur(${screenBlur}px)` : 'none';
+  }
+
+  // ── Vignette ──────────────────────────────────────────────────
+  const vigOpacity = v * 1.0;                  // 0 → 1.0 (gradient itself is already dark)
+  const vig = document.querySelector('.crt-vignette');
+  if (vig) vig.style.opacity = vigOpacity;
+
+  // ── Noise grain ───────────────────────────────────────────────
+  const noiseOpacity = v * 0.18;               // 0 → 0.18
+  const noise = document.querySelector('.crt-noise');
+  if (noise) noise.style.opacity = noiseOpacity;
+
+  // ── RGB fringe ────────────────────────────────────────────────
+  // Only kicks in above 0.4 so it doesn't muddy low-intensity settings.
+  const fringeOpacity = v < 0.4 ? 0 : (v - 0.4) / 0.6 * 0.9;
+  const fringe = document.querySelector('.crt-fringe');
+  if (fringe) fringe.style.opacity = fringeOpacity;
 }
 
 function toggleCRT(on) {
-  document.getElementById('crt-overlay').style.opacity = on ? '1' : '0';
+  const overlay = document.getElementById('crt-overlay');
+  overlay.style.opacity = on ? '1' : '0';
   document.getElementById('crt-toggle').classList.toggle('on', on);
 }
 
@@ -360,7 +422,6 @@ function wireControls() {
     if (v === 0) document.getElementById('crt-toggle').classList.remove('on');
     else         document.getElementById('crt-toggle').classList.add('on');
   });
-
   // CRT toggle
   let crtOn = App.config.crtEnabled !== false;
   const crtToggle = document.getElementById('crt-toggle');
