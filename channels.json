@@ -210,47 +210,29 @@
       ]
     },
     {
-      "id": "stable_horse_training",
-      "label": "Stable Horse Training",
+      "id": "horses",
+      "label": "Horses",
       "icon": "🐴",
-      "accentColor": "#8B5A2B",
-      "group": "Channels",
-      "playlists": [
-        {
-          "id": "stable_horse_uploads",
-          "label": "All Uploads",
-          "youtubePlaylistId": "UUKjnnmrEZ4-1DfmBWYnmzbw",
-          "note": "Full channel uploads playlist - horsemanship, horse husbandry, and daily stable life from Maple Ridge, BC. Over 2,500 videos covering training tips, horse personalities, and peaceful stable moments."
-        }
-      ]
-    },
-    {
-      "id": "basic_horse_training",
-      "label": "Basic Horse Training",
-      "icon": "🐎",
       "accentColor": "#CD853F",
       "group": "Channels",
       "playlists": [
         {
+          "id": "stable_horse_uploads",
+          "label": "Stable Horse Training",
+          "youtubePlaylistId": "UUKjnnmrEZ4-1DfmBWYnmzbw",
+          "note": "Full channel uploads - horsemanship, horse husbandry, and daily stable life from Maple Ridge, BC."
+        },
+        {
           "id": "basic_horse_uploads",
-          "label": "All Uploads",
+          "label": "Basic Horse Training",
           "youtubePlaylistId": "UUioWVZsEawqjP6EokX5Oabw",
-          "note": "Josie Matthews breaks horse training down into simple, easy-to-understand steps for clear communication between you and your horse."
-        }
-      ]
-    },
-    {
-      "id": "amelia_newcomb_dressage",
-      "label": "Amelia Newcomb Dressage",
-      "icon": "🏇",
-      "accentColor": "#4A7C59",
-      "group": "Channels",
-      "playlists": [
+          "note": "Josie Matthews breaks horse training down into simple, easy-to-understand steps."
+        },
         {
           "id": "amelia_dressage_uploads",
-          "label": "All Uploads",
+          "label": "Amelia Newcomb Dressage",
           "youtubePlaylistId": "UUge7VJZ8Kes5nrC3GeeLxQw",
-          "note": "Simple, quick, actionable tips and exercises from Grand Prix rider and trainer Amelia Newcomb. Covers groundwork, rider position, riding exercises, and advanced dressage movements. New videos every Wednesday."
+          "note": "Simple, actionable tips and exercises from Grand Prix rider and trainer Amelia Newcomb."
         }
       ]
     },
@@ -265,13 +247,13 @@
           "id": "mertkaykay_uploads",
           "label": "MertKayKay",
           "youtubePlaylistId": "UUu-wE5-RNT_jSUFE6_-EKWQ",
-          "note": "Video game reviews and commentary. Primary gaming medium is PlayStation. 'if you shout at me i'll cry'"
+          "note": "Video game reviews and commentary. Primary gaming medium is PlayStation."
         },
         {
           "id": "newlynova_uploads",
           "label": "lexi aka newlynova",
           "youtubePlaylistId": "UU7RLqC5dBBYKy0ao_zFnw0A",
-          "note": "Book reviews for silly goofy people. 'silly goofy books for silly goofy people'"
+          "note": "Book reviews for silly goofy people."
         },
         {
           "id": "jesterbell_uploads",
@@ -283,7 +265,31 @@
           "id": "swell_entertainment_uploads",
           "label": "Swell Entertainment",
           "youtubePlaylistId": "UU_HF-dqn4lCs4fEA4GB210g",
-          "note": "Commentary on products, media, events, and people. Hosted by Amanda, 'the final girl in your horror movie.'"
+          "note": "Commentary on products, media, events, and people. Hosted by Amanda."
+        },
+        {
+          "id": "like_stories_of_old_uploads",
+          "label": "Like Stories of Old",
+          "youtubePlaylistId": "UUs7nPQIEba0T3tGOWWsZpJQ",
+          "note": "Video essays exploring media analysis, philosophy, and personal development."
+        },
+        {
+          "id": "krimsonrogue_uploads",
+          "label": "KrimsonRogue",
+          "youtubePlaylistId": "UUSqyKubmwPrg3ZayK8KE-kA",
+          "note": "Promoting excellent books while mocking terrible writing, and reading everything in between."
+        },
+        {
+          "id": "james_woodall_uploads",
+          "label": "James Woodall",
+          "youtubePlaylistId": "UUC3zB6gJXbmfwmKIL4Y0hVIw",
+          "note": "Nicely edited video essays about media."
+        },
+        {
+          "id": "oddheader_uploads",
+          "label": "oddheader",
+          "youtubePlaylistId": "UUIcR5StUvA7_pPHoAFLmZaA",
+          "note": "Investigating the latest and oddest mysteries and discoveries in video games, as well as deep dives into other random obscurities since 2018."
         }
       ]
     },
@@ -298,7 +304,7 @@
           "id": "hillbilly_kitchen_uploads",
           "label": "The Hillbilly Kitchen",
           "youtubePlaylistId": "UU547XA_zfSXKLaqe-GAiXCg",
-          "note": "Down Home Country Cooking with Becky. Real food, simple recipes, faith, and family. 'The kitchen is the heart of the home.'"
+          "note": "Down Home Country Cooking with Becky. Real food, simple recipes, faith, and family."
         }
       ]
     },
@@ -313,7 +319,13 @@
           "id": "midwest_safety_uploads",
           "label": "Midwest Safety",
           "youtubePlaylistId": "UUazRf1jcMNZEL1MS5i_rWQQ",
-          "note": "Uncover. Inform. Empower. Bodycam footage and public safety content. Practitioners of the 'Right to be Forgotten' for lower-level offenses."
+          "note": "Uncover. Inform. Empower. Bodycam footage and public safety content."
+        },
+        {
+          "id": "sergeant_curtis_uploads",
+          "label": "Sergeant Curtis",
+          "youtubePlaylistId": "UUPlH2h2Ckq1T-DKqw0latYA",
+          "note": "Retired Police Sergeant with 20+ years experience providing analysis on policing. For informational and educational purposes."
         }
       ]
     },
@@ -329,6 +341,24 @@
           "label": "Classic Firearms",
           "youtubePlaylistId": "UUmBmZD1xOLIAmLe7wVKfUmA",
           "note": "Premier source for everything 2A-related. Firearms, industry coverage, and 2A updates."
+        },
+        {
+          "id": "tactical_advisor_uploads",
+          "label": "Tactical Advisor",
+          "youtubePlaylistId": "UUC3JXty3iRjf8wOf4RpeMXKw",
+          "note": "Professional reviews and tests of guns, trucks, and tools."
+        },
+        {
+          "id": "iconic_arms",
+          "label": "Iconic Arms (Ahoy)",
+          "youtubePlaylistId": "PLOQZmjD6P2Hl3KrDBs6Vcc_5XDZbqPABC",
+          "note": "Legendary weapons of FPS history. A documentary-style series exploring iconic firearms from gaming history."
+        },
+        {
+          "id": "blumineck_uploads",
+          "label": "blumineck",
+          "youtubePlaylistId": "UUC-oDfzMpmDq2hotStuDhZc7w",
+          "note": "AKA David the Arrow Bard. Archer, Pole Dancer, and Nerd, all rolled into one deeply strange human!"
         }
       ]
     },
@@ -343,7 +373,94 @@
           "id": "religion_for_breakfast_uploads",
           "label": "ReligionForBreakfast",
           "youtubePlaylistId": "UUct9aR7HC79Cv2g-9oDOTLw",
-          "note": "Educational channel dedicated to the academic, nonsectarian study of religion. Hosted by Dr. Andrew M. Henry (PhD, Boston University)."
+          "note": "Educational channel dedicated to the academic, nonsectarian study of religion. Hosted by Dr. Andrew M. Henry."
+        }
+      ]
+    },
+    {
+      "id": "dead_by_daylight",
+      "label": "Dead By Daylight",
+      "icon": "🔪",
+      "accentColor": "#8B0000",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "supaalf_uploads",
+          "label": "SupaAlf",
+          "youtubePlaylistId": "UUA-cTAVbuPXBnK8O5Dx-pVGA",
+          "note": "Dead by Daylight killer main."
+        },
+        {
+          "id": "otzdarva_uploads",
+          "label": "not Otzdarva",
+          "youtubePlaylistId": "UUDO__Z-tZD4bfG9m4AkK_uA",
+          "note": "Mostly dedicated to Dead by Daylight and other games."
+        },
+        {
+          "id": "slate_uploads",
+          "label": "Slate",
+          "youtubePlaylistId": "UUC8URt8-L-UTTRuH_Eohs_A",
+          "note": "Dead By Daylight streamer combining engaging commentary with good plays. Vods and compilations from twitch.tv/Slate."
+        },
+        {
+          "id": "scott_jund_uploads",
+          "label": "Scott Jund",
+          "youtubePlaylistId": "UUk9gPdY4fbH0BRhyTio9XIg",
+          "note": "Dead by Daylight content creator."
+        },
+        {
+          "id": "king_wolfe_uploads",
+          "label": "KING WOLFE",
+          "youtubePlaylistId": "UUCjQ4j2DgP5n_68ULUhEcF6Q",
+          "note": "The Killer Mains of Dead By Daylight. Focused on killer gameplay strategies."
+        }
+      ]
+    },
+    {
+      "id": "cleaning",
+      "label": "Cleaning",
+      "icon": "🧹",
+      "accentColor": "#7CB9E8",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "leyla_tavas_uploads",
+          "label": "Leyla Tavas",
+          "youtubePlaylistId": "UUcMFbMCrHzukG8BvavDYSCQ",
+          "note": "Aesthetic room makeovers, DIYs, Pinterest-inspired decor, and glow-up content."
+        },
+        {
+          "id": "dana_k_white_uploads",
+          "label": "Dana K White",
+          "youtubePlaylistId": "UUXJYTIbOnPhWHdqJX5oK_Hw",
+          "note": "Reality-based strategies for decluttering, cleaning, and organizing. Tips for real people who don't like cleaning."
+        }
+      ]
+    },
+    {
+      "id": "vrchat_cringe",
+      "label": "VRChat Cringe",
+      "icon": "😬",
+      "accentColor": "#FF6B6B",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "krispe_uploads",
+          "label": "KRISPE",
+          "youtubePlaylistId": "UUuSfmTPnOxC5KsLCS7OIBrw",
+          "note": "VRChat cringe content."
+        },
+        {
+          "id": "proximitychat_uploads",
+          "label": "ProximityChat",
+          "youtubePlaylistId": "UUC8nLGHIUs-Ker0rMulvSBhQ",
+          "note": "The craziest VR Chat moments. Some videos are age restricted."
+        },
+        {
+          "id": "ratgrave_uploads",
+          "label": "RatGrave",
+          "youtubePlaylistId": "UUCrCYCqvzaw3qu9md0Nvj_qg",
+          "note": "Documenting virtual interactions. VRChat cringe content."
         }
       ]
     }
