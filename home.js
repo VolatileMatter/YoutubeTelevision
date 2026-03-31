@@ -31,6 +31,8 @@ const App = {
     isFiller:   false,
   },
   pending: null, // { channelId, playlistId, index } queued after filler
+  // Stores { title, episode } keyed by playlistId, populated as videos play
+  watchLog: {},
 };
 
 // ─── Cookie helpers ───────────────────────────────────────────────────────────
@@ -141,6 +143,9 @@ function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.ENDED) {
     handleVideoEnded();
   }
+  if (event.data === YT.PlayerState.PLAYING) {
+    captureNowPlayingTitle();
+  }
 }
 
 function onPlayerError(event) {
@@ -231,6 +236,84 @@ function loadPendingEpisode() {
   else playNext();
 }
 
+// ─── Watch log ────────────────────────────────────────────────────────────────
+
+/**
+ * Called when a video enters PLAYING state.
+ * Reads the title from the YT API and stores it in App.watchLog,
+ * keyed by the current playlistId.
+ */
+function captureNowPlayingTitle() {
+  if (App.current.isFiller) return;
+  const playlistId = App.current.playlistId;
+  if (!playlistId) return;
+
+  // getVideoData() is available once the player has loaded a video
+  const data = App.player.getVideoData?.();
+  const title = data?.title ?? null;
+  const episode = Cookies.get(playlistId); // already-incremented = "just finished" index + 1
+
+  App.watchLog[playlistId] = { title, episode };
+  renderWatchLog();
+}
+
+/**
+ * Renders the Watch Log panel for the currently active channel.
+ * Shows each playlist's last-watched episode number and title.
+ * For "all channels", shows every playlist from every channel, grouped.
+ */
+function renderWatchLog() {
+  const container = document.getElementById('watch-log-list');
+  if (!container) return;
+
+  // Determine which channels/playlists to show
+  let sections; // [{ channel, playlists[] }]
+  if (App.activeChannelId === 'all') {
+    sections = App.channels.map(ch => ({ channel: ch, playlists: ch.playlists }));
+  } else {
+    const ch = getChannelById(App.activeChannelId);
+    sections = ch ? [{ channel: ch, playlists: ch.playlists }] : [];
+  }
+
+  container.innerHTML = '';
+
+  if (sections.length === 0) {
+    container.innerHTML = '<div class="wl-empty">No data</div>';
+    return;
+  }
+
+  for (const { channel, playlists } of sections) {
+    // Only show channel header in "all" mode (multiple channels)
+    if (App.activeChannelId === 'all') {
+      const chHead = document.createElement('div');
+      chHead.className = 'wl-channel-head';
+      chHead.textContent = `${channel.icon} ${channel.label}`;
+      container.appendChild(chHead);
+    }
+
+    for (const pl of playlists) {
+      const log = App.watchLog[pl.id];
+      const ep  = log ? log.episode : Cookies.get(pl.id);
+      const title = log?.title ?? null;
+
+      const row = document.createElement('div');
+      row.className = 'wl-row' + (pl.id === App.current.playlistId ? ' wl-row--active' : '');
+
+      const isPlaying = pl.id === App.current.playlistId && !App.current.isFiller;
+
+      row.innerHTML = `
+        <div class="wl-playlist-name">
+          ${isPlaying ? '<span class="wl-playing-dot"></span>' : ''}
+          ${pl.label}
+        </div>
+        <div class="wl-ep-num">EP&nbsp;${ep > 0 ? ep : '—'}</div>
+        ${title ? `<div class="wl-title">${title}</div>` : ep === 0 ? '<div class="wl-title wl-unseen">Not started</div>' : '<div class="wl-title wl-unseen">—</div>'}
+      `;
+      container.appendChild(row);
+    }
+  }
+}
+
 // ─── Channel switching ────────────────────────────────────────────────────────
 function switchChannel(channelId) {
   if (channelId === App.activeChannelId) return;
@@ -242,6 +325,7 @@ function switchChannel(channelId) {
 
   setAccentColor(channelId === 'all' ? null : channelId);
   triggerCRTFlicker();
+  renderWatchLog();
   if (App.playerReady) playNext();
 }
 
@@ -469,6 +553,7 @@ async function init() {
   buildChannelList();
   wireControls();
   startClock();
+  renderWatchLog();
 
   const tag = document.createElement('script');
   tag.src = 'https://www.youtube.com/iframe_api';

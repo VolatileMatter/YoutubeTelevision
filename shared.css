@@ -5,17 +5,19 @@
 @import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Oswald:wght@400;700&display=swap');
 
 :root {
-  --bg:           #0a0a0f;
+  --bg:           #000000;
   --phosphor:     #c8f0c0;
   --amber:        #ffb347;
   --red-led:      #ff3333;
   --green-led:    #39ff14;
-  --ui-border:    rgba(200, 240, 192, 0.15);
+  --ui-border:    rgba(200, 240, 192, 0.10);
   --font-display: 'VT323', monospace;
   --font-mono:    'Share Tech Mono', monospace;
   --font-ui:      'Oswald', sans-serif;
   --crt-intensity: 0.4;
   --accent:       #c8f0c0;
+  --panel-bg:     #080808;
+  --panel-bg2:    #050505;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -33,7 +35,7 @@ html, body {
 #app {
   display: grid;
   grid-template-rows: 1fr 50px;
-  grid-template-columns: 190px 1fr 160px;
+  grid-template-columns: 190px 1fr 190px;
   grid-template-areas:
     "sidebar screen panel"
     "sidebar controls panel";
@@ -206,7 +208,7 @@ html, body {
 /* ── Sidebar ─────────────────────────────────────────────────── */
 #sidebar {
   grid-area: sidebar;
-  background: linear-gradient(180deg, #151420 0%, #0e0d16 100%);
+  background: var(--panel-bg);
   border-right: 1px solid var(--ui-border);
   display: flex;
   flex-direction: column;
@@ -331,7 +333,7 @@ body.shuffle-on .ch-btn.active .shuffle-badge { opacity: 1; }
 /* ── Right Panel ─────────────────────────────────────────────── */
 #panel {
   grid-area: panel;
-  background: linear-gradient(180deg, #151420 0%, #0e0d16 100%);
+  background: var(--panel-bg);
   border-left: 1px solid var(--ui-border);
   display: flex;
   flex-direction: column;
@@ -443,7 +445,7 @@ input[type=range]::-moz-range-thumb {
   align-items: center;
   gap: 10px;
   padding: 0 12px;
-  background: #0e0d16;
+  background: var(--panel-bg2);
   border-top: 1px solid var(--ui-border);
   height: 50px;
   flex-shrink: 0;
@@ -511,6 +513,111 @@ body.shuffle-on #shuffle-indicator { opacity: 1; }
   flex-shrink: 0;
   min-width: 68px;
   text-align: right;
+}
+
+/* ── Watch Log ───────────────────────────────────────────────── */
+.watch-log-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#watch-log-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+#watch-log-list::-webkit-scrollbar { width: 2px; }
+#watch-log-list::-webkit-scrollbar-thumb { background: var(--ui-border); border-radius: 1px; }
+
+.wl-channel-head {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(200,240,192,0.28);
+  padding: 8px 0 3px;
+  border-top: 1px solid var(--ui-border);
+  margin-top: 4px;
+}
+.wl-channel-head:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+
+.wl-row {
+  padding: 6px 7px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  background: rgba(200,240,192,0.02);
+  transition: background 0.1s;
+}
+
+.wl-row--active {
+  border-color: var(--ui-border);
+  background: rgba(200,240,192,0.05);
+}
+
+.wl-playlist-name {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: rgba(200,240,192,0.7);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.2;
+}
+
+/* Animated dot shown next to currently-playing playlist */
+.wl-playing-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 5px var(--accent);
+  flex-shrink: 0;
+  animation: ledPulse 1.5s ease-in-out infinite;
+}
+
+.wl-ep-num {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent);
+  line-height: 1.1;
+  margin-top: 1px;
+}
+
+.wl-title {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: rgba(200,240,192,0.35);
+  letter-spacing: 0.3px;
+  line-height: 1.3;
+  margin-top: 1px;
+  /* Truncate long titles to two lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.wl-unseen {
+  color: rgba(200,240,192,0.2);
+  font-style: italic;
+}
+
+.wl-empty {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(200,240,192,0.2);
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 12px 0;
 }
 
 .hidden { display: none !important; }
