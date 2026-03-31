@@ -91,6 +91,30 @@
           "id": "mlp_fim",
           "label": "My Little Pony: FiM",
           "youtubePlaylistId": "PLUHTFqUs5bpFG015CP_50Mqi8JElF_HJs"
+        },
+        {
+          "id": "unicorn_academy_shorts",
+          "label": "Unicorn Academy Shorts",
+          "youtubePlaylistId": "PL6icaH5xf_lB4YXBcd-a4_RngQQJdmbqP",
+          "note": "All Episodes - Funny Cartoons for Kids!"
+        },
+        {
+          "id": "unicorn_academy_chapter2",
+          "label": "Unicorn Academy CHAPTER 2",
+          "youtubePlaylistId": "PL6icaH5xf_lCQOzaEbSpmJOAMrt0ff7hn",
+          "note": "✨✌️"
+        },
+        {
+          "id": "ever_after_high",
+          "label": "Ever After High",
+          "youtubePlaylistId": "PLr03KJayYY_ilgsvDQvyyu2t5lLwHzkoZ",
+          "note": "All Full Episodes of All Chapters, Full Complete Series (Includes Netflix Specials) - Note: Spring Unsprung & Epic Winter specials unavailable in full, presented as clips."
+        },
+        {
+          "id": "winx_club",
+          "label": "Winx Club",
+          "youtubePlaylistId": "PL8wnyUk-h37Mu6tBYrbzB8Nc0e1Oud_1A",
+          "note": "Seasons 1-7 [FULL EPISODES]"
         }
       ]
     },
@@ -167,6 +191,159 @@
           "id": "cottagecore_main",
           "label": "Cottagecore Vibes",
           "youtubePlaylistId": "PLY7D7qD8JTWrmnnO0Jqz0QluJfY-rNOon"
+        }
+      ]
+    },
+    {
+      "id": "internet_humor",
+      "label": "Internet Humor",
+      "icon": "😂",
+      "accentColor": "#FF69B4",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "charlie_the_unicorn",
+          "label": "Charlie The Unicorn",
+          "youtubePlaylistId": "PL6jGyAEX4UH2wZv9SltHnZchCxc-7QKVN",
+          "note": "All Episodes in Order"
+        }
+      ]
+    },
+    {
+      "id": "stable_horse_training",
+      "label": "Stable Horse Training",
+      "icon": "🐴",
+      "accentColor": "#8B5A2B",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "stable_horse_uploads",
+          "label": "All Uploads",
+          "youtubePlaylistId": "UUKjnnmrEZ4-1DfmBWYnmzbw",
+          "note": "Full channel uploads playlist - horsemanship, horse husbandry, and daily stable life from Maple Ridge, BC. Over 2,500 videos covering training tips, horse personalities, and peaceful stable moments."
+        }
+      ]
+    },
+    {
+      "id": "basic_horse_training",
+      "label": "Basic Horse Training",
+      "icon": "🐎",
+      "accentColor": "#CD853F",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "basic_horse_uploads",
+          "label": "All Uploads",
+          "youtubePlaylistId": "UUioWVZsEawqjP6EokX5Oabw",
+          "note": "Josie Matthews breaks horse training down into simple, easy-to-understand steps for clear communication between you and your horse."
+        }
+      ]
+    },
+    {
+      "id": "amelia_newcomb_dressage",
+      "label": "Amelia Newcomb Dressage",
+      "icon": "🏇",
+      "accentColor": "#4A7C59",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "amelia_dressage_uploads",
+          "label": "All Uploads",
+          "youtubePlaylistId": "UUge7VJZ8Kes5nrC3GeeLxQw",
+          "note": "Simple, quick, actionable tips and exercises from Grand Prix rider and trainer Amelia Newcomb. Covers groundwork, rider position, riding exercises, and advanced dressage movements. New videos every Wednesday."
+        }
+      ]
+    },
+    {
+      "id": "media_critique",
+      "label": "Media Critique",
+      "icon": "🎬",
+      "accentColor": "#E67E22",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "mertkaykay_uploads",
+          "label": "MertKayKay",
+          "youtubePlaylistId": "UUu-wE5-RNT_jSUFE6_-EKWQ",
+          "note": "Video game reviews and commentary. Primary gaming medium is PlayStation. 'if you shout at me i'll cry'"
+        },
+        {
+          "id": "newlynova_uploads",
+          "label": "lexi aka newlynova",
+          "youtubePlaylistId": "UU7RLqC5dBBYKy0ao_zFnw0A",
+          "note": "Book reviews for silly goofy people. 'silly goofy books for silly goofy people'"
+        },
+        {
+          "id": "jesterbell_uploads",
+          "label": "JesterBell",
+          "youtubePlaylistId": "UU68LeiZoTOM7F2KpV6IPsSg",
+          "note": "Independent filmmaker sharing movie opinions. Loves superheroes, psychopaths, and baby penguins 🐧"
+        },
+        {
+          "id": "swell_entertainment_uploads",
+          "label": "Swell Entertainment",
+          "youtubePlaylistId": "UU_HF-dqn4lCs4fEA4GB210g",
+          "note": "Commentary on products, media, events, and people. Hosted by Amanda, 'the final girl in your horror movie.'"
+        }
+      ]
+    },
+    {
+      "id": "cooking",
+      "label": "Cooking",
+      "icon": "🍳",
+      "accentColor": "#D2691E",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "hillbilly_kitchen_uploads",
+          "label": "The Hillbilly Kitchen",
+          "youtubePlaylistId": "UU547XA_zfSXKLaqe-GAiXCg",
+          "note": "Down Home Country Cooking with Becky. Real food, simple recipes, faith, and family. 'The kitchen is the heart of the home.'"
+        }
+      ]
+    },
+    {
+      "id": "bodycam",
+      "label": "Bodycam",
+      "icon": "📹",
+      "accentColor": "#2C3E50",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "midwest_safety_uploads",
+          "label": "Midwest Safety",
+          "youtubePlaylistId": "UUazRf1jcMNZEL1MS5i_rWQQ",
+          "note": "Uncover. Inform. Empower. Bodycam footage and public safety content. Practitioners of the 'Right to be Forgotten' for lower-level offenses."
+        }
+      ]
+    },
+    {
+      "id": "weapons",
+      "label": "Weapons",
+      "icon": "🔫",
+      "accentColor": "#556B2F",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "classic_firearms_uploads",
+          "label": "Classic Firearms",
+          "youtubePlaylistId": "UUmBmZD1xOLIAmLe7wVKfUmA",
+          "note": "Premier source for everything 2A-related. Firearms, industry coverage, and 2A updates."
+        }
+      ]
+    },
+    {
+      "id": "religion",
+      "label": "Religion",
+      "icon": "✝️",
+      "accentColor": "#9B59B6",
+      "group": "Channels",
+      "playlists": [
+        {
+          "id": "religion_for_breakfast_uploads",
+          "label": "ReligionForBreakfast",
+          "youtubePlaylistId": "UUct9aR7HC79Cv2g-9oDOTLw",
+          "note": "Educational channel dedicated to the academic, nonsectarian study of religion. Hosted by Dr. Andrew M. Henry (PhD, Boston University)."
         }
       ]
     }
