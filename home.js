@@ -71,6 +71,7 @@ const App = {
   // that stale event by waiting for the first UNSTARTED→PLAYING transition.
   awaitingNewPlaylist:  false,
   _sawUnstarted:        false,
+  _titleTimer:          null,
 };
 
 // ─── Cookies ─────────────────────────────────────────────────────────────────
@@ -151,7 +152,7 @@ const EffectsCookies = {
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-function randomIndex()   { return Math.floor(Math.random() * 500); }
+function randomIndex()   { return Math.floor(Math.random() * 50); }
 
 function shouldPlayFiller(channel) {
   const fillerList = getFillerForChannel(channel);
@@ -242,6 +243,25 @@ window.onYouTubeIframeAPIReady = function () {
   });
 };
 
+function scheduleTitleCapture() {
+  // Cancel any pending timer so stale captures from previous channels never fire
+  if (App._titleTimer) {
+    clearTimeout(App._titleTimer);
+    App._titleTimer = null;
+    LOG.info('Cancelled stale title timer');
+  }
+  // Snapshot the playlistId at scheduling time; skip if it changed by the time timer fires
+  const expectedPlaylistId = App.current.playlistId;
+  App._titleTimer = setTimeout(() => {
+    App._titleTimer = null;
+    if (App.current.playlistId !== expectedPlaylistId) {
+      LOG.warn(`Title timer fired but playlist changed: expected="${expectedPlaylistId}" current="${App.current.playlistId}" — skipping`);
+      return;
+    }
+    captureNowPlayingTitle();
+  }, 1200);
+}
+
 function onPlayerStateChange(event) {
   const stateNames = { '-1': 'UNSTARTED', 0: 'ENDED', 1: 'PLAYING', 2: 'PAUSED', 3: 'BUFFERING', 5: 'CUED' };
   LOG.info(`Player state: ${stateNames[event.data] ?? event.data} | awaitingNewPlaylist=${App.awaitingNewPlaylist} sawUnstarted=${App._sawUnstarted}`);
@@ -252,23 +272,20 @@ function onPlayerStateChange(event) {
   }
 
   if (App.awaitingNewPlaylist) {
-    // We need to see UNSTARTED (-1) first — that's the new playlist resetting —
-    // then the next PLAYING event is the real new video.
     if (event.data === YT.PlayerState.UNSTARTED) {
       App._sawUnstarted = true;
-      LOG.info('Got UNSTARTED after loadPlaylist — next PLAYING will be the new video');
+      LOG.info('Got UNSTARTED — next PLAYING is the new video');
     } else if (event.data === YT.PlayerState.PLAYING && App._sawUnstarted) {
       App.awaitingNewPlaylist = false;
       App._sawUnstarted = false;
-      LOG.info('New playlist confirmed playing — capturing title (deferred 800ms)');
-      setTimeout(captureNowPlayingTitle, 800);
-    } else {
-      LOG.info(`Ignoring non-PLAYING state during awaitingNewPlaylist: ${stateNames[event.data] ?? event.data}`);
+      LOG.info('New playlist playing — scheduling title capture');
+      scheduleTitleCapture();
     }
+    // All other states during await: ignore silently
     return;
   }
 
-  if (event.data === YT.PlayerState.PLAYING) setTimeout(captureNowPlayingTitle, 800);
+  if (event.data === YT.PlayerState.PLAYING) scheduleTitleCapture();
 }
 
 function onPlayerError(event) {
@@ -323,6 +340,8 @@ function playNext() {
 
 function loadEpisode({ channelId, playlistId, index }) {
   LOG.info(`loadEpisode: channel="${channelId}" playlist="${playlistId}" index=${index}`);
+  // Cancel any pending title capture from a previous playlist immediately
+  if (App._titleTimer) { clearTimeout(App._titleTimer); App._titleTimer = null; }
   App.current = { channelId, playlistId, isFiller: false };
   hideStatic();
   const pl = findPlaylistAnywhere(playlistId);
@@ -349,6 +368,7 @@ function playFiller(channel) {
   const pl    = pickRandom(fillerList);
   const index = randomIndex();
   LOG.info(`playFiller: "${pl.id}" ytId="${pl.youtubePlaylistId}" index=${index}`);
+  if (App._titleTimer) { clearTimeout(App._titleTimer); App._titleTimer = null; }
   App.current = { channelId: 'filler', playlistId: pl.id, isFiller: true };
   updateNowPlaying(null, pl.label, index);
   App.awaitingNewPlaylist = true;
