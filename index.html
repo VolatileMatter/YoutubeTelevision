@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RetroTube TV</title>
+  <link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── Sidebar: channel list ─────────────────────────────── -->
+  <aside id="sidebar">
+    <div id="sidebar-header">
+      <div id="site-title">RetroTube TV</div>
+      <div id="site-sub">ON&nbsp;AIR</div>
+    </div>
+    <div id="channel-list">
+      <!-- Populated by home.js -->
+    </div>
+    <div id="sidebar-footer">
+      <span class="led"></span>
+      LIVE
+    </div>
+  </aside>
+
+  <!-- ── Main screen ───────────────────────────────────────── -->
+  <main id="screen-wrap">
+
+    <!-- YouTube player target -->
+    <div id="yt-player"></div>
+
+    <!-- Static / no-signal overlay -->
+    <div id="static-screen">
+      <div class="static-noise-bg"></div>
+      <div id="static-message">NO SIGNAL</div>
+    </div>
+
+    <!-- CRT effects overlay (pointer-events: none) -->
+    <div id="crt-overlay">
+      <div class="crt-noise"></div>
+    </div>
+
+    <!-- Channel-switch flash -->
+    <div class="crt-flicker"></div>
+
+  </main>
+
+  <!-- ── Right panel: settings ─────────────────────────────── -->
+  <aside id="panel">
+
+    <div>
+      <div class="panel-title">CRT</div>
+
+      <button class="toggle-btn on" id="crt-toggle">
+        <span class="toggle-dot"></span>
+        SCANLINES
+      </button>
+
+      <div class="knob-row" style="margin-top: 10px;">
+        <span class="knob-label">Intensity</span>
+        <input type="range" id="crt-intensity-slider" min="0" max="100" value="40" />
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Bottom controls bar ───────────────────────────────── -->
+  <footer id="controls-bar">
+    <div id="now-playing">
+      <div id="np-channel">📺&nbsp;&nbsp;RetroTube TV</div>
+      <div id="np-detail">Loading…</div>
+    </div>
+
+    <button class="ctrl-btn" id="btn-skip">SKIP ▶▶</button>
+    <div id="clock">--:--</div>
+  </footer>
+
+</div>
+
+<script src="home.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+{
+  "config": {
+    "siteName": "RetroTube TV",
+    "crtEnabled": true,
+    "crtIntensity": 0.4,
+    "fillerChance": 0.4
+  },
+  "filler": {
+    "id": "filler",
+    "label": "Filler",
+    "description": "Random interstitial content shown between episodes",
+    "playlists": [
+      {
+        "id": "filler_main",
+        "label": "Interstitials",
+        "youtubePlaylistId": "YOUR_FILLER_PLAYLIST_ID_HERE"
+      }
+    ]
+  },
+  "channels": [
+    {
+      "id": "pokemon",
+      "label": "Pokémon",
+      "icon": "⚡",
+      "accentColor": "#FFCB05",
+      "playlists": [
+        {
+          "id": "pokemon_og",
+          "label": "Original Series",
+          "youtubePlaylistId": "YOUR_POKEMON_PLAYLIST_ID_HERE"
+        }
+      ]
+    },
+    {
+      "id": "mlp",
+      "label": "My Little Pony",
+      "icon": "🌈",
+      "accentColor": "#C8A2C8",
+      "playlists": [
+        {
+          "id": "mlp_fim",
+          "label": "Friendship is Magic",
+          "youtubePlaylistId": "YOUR_MLP_PLAYLIST_ID_HERE"
+        }
+      ]
+    }
+  ]
+}
